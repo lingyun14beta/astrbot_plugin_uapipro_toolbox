@@ -257,7 +257,7 @@ class UApiProPlugin(Star):
             # 依次推送至配置的用户
             for uid in users:
                 try:
-                    umo = str(uid) if ":" in str(uid) else f"{plat}:PrivateMessage:{uid}"
+                    umo = str(uid) if ":" in str(uid) else f"{plat}:FriendMessage:{uid}"
                     await self.context.send_message(umo, MessageChain().file_image(path).message("\n📰 每日早报"))
                 except: pass
                 await asyncio.sleep(1.5)
