@@ -1,5 +1,5 @@
 # 插件的唯一标识名 
-name: astrbot_plugin_uapipro
+name: astrbot_plugin_uapipro_toolbox
 
 # 插件展示名 (显示在 UI 界面上的名字，可以更友好)
 display_name: UApiPro 工具箱
@@ -17,7 +17,7 @@ version: 1.6.5
 author: lingyun
 
 # (可选) 你的 GitHub 仓库地址
-repo: "https://github.com/yourname/astrbot_plugin_uapipro"
+repo: "https://github.com/yourname/astrbot_plugin_uapipro_toolbox"
 
 
 # 对应你放在插件目录下的 logo.png 文件
