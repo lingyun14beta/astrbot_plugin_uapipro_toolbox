@@ -1,0 +1,71 @@
+{
+    "uapi_token": {
+        "description": "接口密钥 (Token)",
+        "hint": "请前往 uapis.cn 获取您的 API Token",
+        "type": "string",
+        "default": ""
+    },
+    "uapi_cd": {
+        "description": "指令冷却时间 (秒)",
+        "hint": "两次指令触发之间的最小间隔时间（建议 5 秒）",
+        "type": "float",
+        "default": 5.0
+    },
+    "uapi_text_mode": {
+        "description": "纯文本回复模式",
+        "hint": "开启后，机器人将只发送文字结果，不发送图片",
+        "type": "bool",
+        "default": false
+    },
+    "random_img_categories": {
+        "description": "随机图片图库范围",
+        "hint": "点击并勾选你想要包含的分类",
+        "type": "list",
+        "options": [
+            "acg", 
+            "landscape", 
+            "anime", 
+            "pc_wallpaper", 
+            "mobile_wallpaper", 
+            "general_anime", 
+            "ai_drawing", 
+            "bq", 
+            "furry"
+        ],
+        "default": [
+            "acg", 
+            "landscape", 
+            "anime", 
+            "pc_wallpaper", 
+            "mobile_wallpaper", 
+            "general_anime", 
+            "ai_drawing", 
+            "bq", 
+            "furry"
+        ]
+    },
+    "news_schedule_enabled": {
+        "description": "启用每日新闻推送",
+        "hint": "是否开启每天固定时间的定时新闻任务",
+        "type": "bool",
+        "default": false
+    },
+    "news_schedule_time": {
+        "description": "新闻推送的具体时间",
+        "hint": "格式为 HH:MM，例如 08:30",
+        "type": "string",
+        "default": "08:00"
+    },
+    "news_groups": {
+        "description": "接收新闻的群号列表",
+        "hint": "每行输入一个群号，按回车键添加",
+        "type": "list",
+        "default": []
+    },
+    "news_users": {
+        "description": "接收新闻的 QQ 号列表",
+        "hint": "每行输入一个 QQ 号，按回车键添加",
+        "type": "list",
+        "default": []
+    }
+}

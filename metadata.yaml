@@ -1,0 +1,31 @@
+# 插件的唯一标识名 
+name: astrbot_plugin_uapipro
+
+# 插件展示名 (显示在 UI 界面上的名字，可以更友好)
+display_name: UApiPro 工具箱
+
+# 插件的一句话简介
+desc: 调用 UApiPro 提供的免费 API，支持一言、天气、IP 查询，卡片图片返回。
+
+# 插件的详细帮助信息或指令列表
+help: 插件提供多种实用查询指令，请查看 README.md 获取详细说明，或发送 /u 帮助 查看指令列表。
+
+# 插件版本号
+version: 1.6.5
+
+# 作者名
+author: lingyun
+
+# (可选) 你的 GitHub 仓库地址
+repo: "https://github.com/yourname/astrbot_plugin_uapipro"
+
+
+# 对应你放在插件目录下的 logo.png 文件
+logo: logo.png
+
+# (新增) 声明支持的平台
+support_platforms:
+  - aiocqhttp
+
+
+
