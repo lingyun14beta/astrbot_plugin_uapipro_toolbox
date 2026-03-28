@@ -17,7 +17,7 @@ version: 1.6.5
 author: lingyun
 
 # (可选) 你的 GitHub 仓库地址
-repo: "https://github.com/yourname/astrbot_plugin_uapipro_toolbox"
+repo: "https://github.com/lingyun14beta/astrbot_plugin_uapipro_toolbox"
 
 
 # 对应你放在插件目录下的 logo.png 文件
