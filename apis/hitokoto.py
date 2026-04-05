@@ -16,11 +16,13 @@ async def fetch(token: str = "", session: aiohttp.ClientSession = None):
         async with session.get(API_URL, params=params, timeout=8) as resp:
             try:
                 data = await resp.json(content_type=None)
-            except Exception: data = {}
+            except Exception: 
+                data = {}
 
             if resp.status == 200:
                 content = data.get("text", "").strip()
-                if not content: return False, "", "❌ API 未返回任何语录内容。"
+                if not content: 
+                    return False, "", "❌ API 未返回任何语录内容。"
                 fields = [("今日语录", content)]
                 html = render_card("今日一言", "✨", fields, "#7C83FD")
                 return True, html, ""
@@ -32,6 +34,8 @@ async def fetch(token: str = "", session: aiohttp.ClientSession = None):
                 return False, "", f"❌ 查询失败: {api_msg}"
             else:
                 return False, "", f"❌ 接口响应异常 (HTTP {resp.status})"
-    except Exception as e: return False, "", f"⚠️ 网络连接失败: {str(e)}"
+    except Exception as e: 
+        return False, "", f"⚠️ 网络连接失败: {str(e)}"
     finally:
-        if local_session: await session.close()
+        if local_session: 
+            await session.close()
