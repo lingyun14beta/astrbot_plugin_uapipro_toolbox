@@ -137,8 +137,10 @@ class UApiProPlugin(Star):
         last_date = None
         try:
             h, m = map(int, target_str.split(":"))
-            if now >= now.replace(hour=h, minute=m, second=0): last_date = now.date()
-        except: pass
+            if now >= now.replace(hour=h, minute=m, second=0): 
+                last_date = now.date()
+        except: 
+            pass
         while True:
             await asyncio.sleep(30)
             try:
@@ -150,36 +152,44 @@ class UApiProPlugin(Star):
                     if now >= target_time and last_date != now.date():
                         last_date = now.date()
                         await self._broadcast_news()
-            except Exception as e: logger.error(f"[UApiPro] 调度器异常: {e}")
+            except Exception as e: 
+                logger.error(f"[UApiPro] 调度器异常: {e}")
 
     async def _broadcast_news(self):
         from .apis import news
         from astrbot.api.event import MessageChain
         groups, users = self.plugin_config.get("news_groups", []), self.plugin_config.get("news_users", [])
-        if not groups and not users: return
+        if not groups and not users: 
+            return
         plat = "default"
         try:
             all_plats = self.context.get_all_platforms()
-            if all_plats: plat = list(all_plats.keys())[0]
-        except: pass
+            if all_plats: 
+                plat = list(all_plats.keys())[0]
+        except: 
+            pass
         ok, path, err = await news.fetch(self.plugin_config.get("uapi_token", ""), session=self.session)
-        if not ok: return
+        if not ok: 
+            return
         try:
             for gid in groups:
                 try:
                     umo = str(gid) if ":" in str(gid) else f"{plat}:GroupMessage:{gid}"
                     await self.context.send_message(umo, MessageChain().file_image(path).message("\n📰 每日早报"))
-                except: pass
+                except: 
+                    pass
                 await asyncio.sleep(1.5)
             for uid in users:
                 try:
                     umo = str(uid) if ":" in str(uid) else f"{plat}:FriendMessage:{uid}"
                     await self.context.send_message(umo, MessageChain().file_image(path).message("\n📰 每日早报"))
-                except: pass
+                except: 
+                    pass
                 await asyncio.sleep(1.5)
         finally:
             if path and os.path.exists(path):
-                with contextlib.suppress(OSError): os.remove(path)
+                with contextlib.suppress(OSError): 
+                    os.remove(path)
 
     async def _send_analysis_report(self, event, html, title):
         if self.plugin_config.get("uapi_text_mode", False):
@@ -190,23 +200,29 @@ class UApiProPlugin(Star):
             try:
                 if hasattr(self, "html_render"):
                     image_path = await self.html_render(html, {})
-                    if image_path: yield event.chain_result([Image(file=image_path), Plain(f"\n✨ {title}")])
-            except Exception as e: logger.warning(f"[UApiPro] 渲染失败: {e}")
+                    if image_path: 
+                        yield event.chain_result([Image(file=image_path), Plain(f"\n✨ {title}")])
+            except Exception as e: 
+                logger.warning(f"[UApiPro] 渲染失败: {e}")
             finally:
                 if image_path and os.path.exists(image_path):
-                    with contextlib.suppress(OSError): os.remove(image_path)
-        if not image_path: yield event.plain_result(self._parse_to_text(html))
+                    with contextlib.suppress(OSError): 
+                        os.remove(image_path)
+        if not image_path: 
+            yield event.plain_result(self._parse_to_text(html))
 
     async def _check_cd(self, event) -> tuple[bool, float]:
         user_id = event.get_sender_id()
         async with self.cd_lock:
             if len(self.last_call_times) > 1000:
                 keys = list(self.last_call_times.keys())
-                for _ in range(200): self.last_call_times.pop(random.choice(keys), None)
+                for _ in range(200): 
+                    self.last_call_times.pop(random.choice(keys), None)
             now = time.time()
             cd_sec = self.plugin_config.get("uapi_cd", 5.0)
             elapsed = now - self.last_call_times.get(user_id, 0)
-            if elapsed < cd_sec: return True, round(cd_sec - elapsed, 1)
+            if elapsed < cd_sec: 
+                return True, round(cd_sec - elapsed, 1)
             self.last_call_times[user_id] = now
             return False, 0
 
@@ -222,10 +238,12 @@ class UApiProPlugin(Star):
                 if label and val:
                     res.append(f"📍 {label}: {val}")
             return "\n".join(res) if len(res) > 2 else "📊 暂无结果数据。"
-        except: return "📊 结果解析失败。"
+        except: 
+            return "📊 结果解析失败。"
 
     async def terminate(self):
         if hasattr(self, 'session') and not self.session.closed:
             await self.session.close()
-        if hasattr(self, 'bg_task'): self.bg_task.cancel()
+        if hasattr(self, 'bg_task'): 
+            self.bg_task.cancel()
         logger.info("[UApiPro] 插件卸载完成。")
