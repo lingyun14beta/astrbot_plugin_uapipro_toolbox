@@ -18,12 +18,17 @@ async def fetch(city: str, token: str, session: aiohttp.ClientSession = None):
         async with session.get(API_URL, params=params, timeout=10) as resp:
             try:
                 res_json = await resp.json(content_type=None)
-            except Exception: res_json = {}
+            except Exception: 
+                res_json = {}
+
+            if not isinstance(res_json, dict):
+                res_json = {}
 
             if resp.status == 200:
                 data = res_json
                 location = f"{data.get('province', '')}{data.get('city', '')}{data.get('district', '')}"
-                if not location: location = city or "自动定位"
+                if not location: 
+                    location = city or "自动定位"
                 fields = [
                     ("地理位置", location),
                     ("实时天气", f"{data.get('weather', '--')} | {data.get('temperature', '--')}°C (体感 {data.get('feels_like', '--')}°C)"),
@@ -39,10 +44,15 @@ async def fetch(city: str, token: str, session: aiohttp.ClientSession = None):
                 return True, html, ""
 
             api_err_msg = res_json.get("message")
-            if api_err_msg: return False, "", f"天气查询失败: {api_err_msg}"
-            if resp.status == 404: return False, "", "❌ 未找到该城市，请检查城市名是否正确。"
-            if resp.status == 400: return False, "", "❌ 请求参数错误，请稍后再试。"
+            if api_err_msg: 
+                return False, "", f"天气查询失败: {api_err_msg}"
+            if resp.status == 404: 
+                return False, "", "❌ 未找到该城市，请检查城市名是否正确。"
+            if resp.status == 400: 
+                return False, "", "❌ 请求参数错误，请稍后再试。"
             return False, "", f"❌ 接口响应异常 (HTTP {resp.status})"
-    except Exception as e: return False, "", f"⚠️ 网络连接失败: {str(e)}"
+    except Exception as e: 
+        return False, "", f"⚠️ 网络连接失败: {str(e)}"
     finally:
-        if local_session: await session.close()
+        if local_session: 
+            await session.close()
