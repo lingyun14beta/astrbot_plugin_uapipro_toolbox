@@ -4,7 +4,8 @@ from ..card_renderer import render_card
 API_URL = "https://uapis.cn/api/v1/network/ipinfo"
 
 async def fetch(ip: str, token: str, session: aiohttp.ClientSession = None):
-    if not ip or len(ip.strip()) == 0: return False, "", "❌ 请输入要查询的 IP 地址或域名。"
+    if not ip or len(ip.strip()) == 0: 
+        return False, "", "❌ 请输入要查询的 IP 地址或域名。"
     params = {"ip": ip, "token": token}
     headers = {"User-Agent": "AstrBot_UApiPro", "Token": token, "Authorization": f"Bearer {token}"}
     
@@ -17,7 +18,8 @@ async def fetch(ip: str, token: str, session: aiohttp.ClientSession = None):
         async with session.get(API_URL, params=params, timeout=8) as resp:
             try:
                 data = await resp.json(content_type=None)
-            except Exception: data = {}
+            except Exception: 
+                data = {}
 
             if resp.status == 200:
                 fields = [
@@ -28,9 +30,11 @@ async def fetch(ip: str, token: str, session: aiohttp.ClientSession = None):
                     ("ASN 编号", f"🔢 {data.get('asn', '--')}")
                 ]
                 lat, lon = data.get("latitude"), data.get("longitude")
-                if lat and lon: fields.append(("地理坐标", f"🌐 {lat}, {lon}"))
+                if lat and lon: 
+                    fields.append(("地理坐标", f"🌐 {lat}, {lon}"))
                 begin, end = data.get("beginip"), data.get("endip")
-                if begin and end: fields.append(("所属网段", f"📶 {begin} ~ {end}"))
+                if begin and end: 
+                    fields.append(("所属网段", f"📶 {begin} ~ {end}"))
 
                 html = render_card("IP 归属地查询", "🌐", fields, "#4E73DF")
                 return True, html, ""
@@ -43,6 +47,8 @@ async def fetch(ip: str, token: str, session: aiohttp.ClientSession = None):
             elif resp.status == 500:
                 return False, "", f"❌ 服务器内部错误: {api_msg or 'IP查询服务暂时不可用'}"
             return False, "", f"❌ 查询失败: {api_msg or f'HTTP {resp.status}'}"
-    except Exception as e: return False, "", f"⚠️ 网络连接失败: {str(e)}"
+    except Exception as e: 
+        return False, "", f"⚠️ 网络连接失败: {str(e)}"
     finally:
-        if local_session: await session.close()
+        if local_session: 
+            await session.close()
