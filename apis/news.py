@@ -17,35 +17,38 @@ async def fetch(token: str = "", session: aiohttp.ClientSession = None):
     try:
         async with session.get(API_URL, params=params) as resp:
             content_type = resp.headers.get("Content-Type", "").lower()
-
             if resp.status == 200 and "image" in content_type:
                 image_data = await resp.read()
-                if not image_data:
-                    return False, "", "❌ API 返回了空的图片内容"
-
+                if not image_data: return False, "", "❌ API 返回了空的图片内容"
+                
+                # 修复 Windows 路径和脱敏：自动创建目录
                 fd, temp_path = tempfile.mkstemp(suffix=".jpg", prefix="uapi_news_")
-                with os.fdopen(fd, 'wb') as f:
-                    f.write(image_data)
+                try:
+                    os.makedirs(os.path.dirname(temp_path), exist_ok=True)
+                    with os.fdopen(fd, 'wb') as f:
+                        f.write(image_data)
+                except OSError as e:
+                    if os.path.exists(temp_path): os.remove(temp_path)
+                    # 仅返回错误描述，不返回具体路径
+                    return False, "", f"❌ 本地文件写入失败: {e.strerror or 'IO Error'}"
+                except Exception:
+                    if os.path.exists(temp_path): os.remove(temp_path)
+                    return False, "", "❌ 本地文件写入异常"
                 return True, temp_path, ""
 
             try:
                 res_json = await resp.json(content_type=None)
                 api_msg = res_json.get("message", "未知错误")
-            except Exception:
-                api_msg = f"HTTP {resp.status}"
+            except Exception: api_msg = f"HTTP {resp.status}"
 
-            if resp.status == 500:
-                return False, "", f"❌ 渲染失败: {api_msg} (服务器渲染引擎故障)"
-            elif resp.status == 502:
-                return False, "", f"❌ 抓取失败: {api_msg} (新闻源响应异常，请稍后重试)"
-            else:
-                return False, "", f"❌ 接口请求失败: {api_msg}"
-
+            if resp.status == 500: return False, "", f"❌ 渲染失败: {api_msg} (服务器渲染引擎故障)"
+            elif resp.status == 502: return False, "", f"❌ 抓取失败: {api_msg} (新闻源响应异常，请稍后重试)"
+            else: return False, "", f"❌ 接口请求失败: {api_msg}"
     except Exception as e:
-        # 保持原始超时判断逻辑
         err_str = str(e).lower()
-        if "timeout" in err_str:
-            return False, "", "⚠️ 新闻生成超时（图片渲染较慢），请稍后再试。"
-        return False, "", f"⚠️ 网络异常: {str(e)}"
+        if "timeout" in err_str: return False, "", "⚠️ 新闻生成超时，请稍后再试。"
+        # 脱敏处理：若是文件系统错误，不泄露路径
+        error_msg = getattr(e, 'strerror', str(e))
+        return False, "", f"⚠️ 网络异常: {error_msg}"
     finally:
         if local_session: await session.close()
