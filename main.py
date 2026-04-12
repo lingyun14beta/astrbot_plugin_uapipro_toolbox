@@ -297,26 +297,53 @@ class UApiProPlugin(Star):
                     os.remove(path)
 
     async def _send_analysis_report(self, event, html, title):
+        import base64 as _base64
         if self.plugin_config.get("uapi_text_mode", False):
             yield event.plain_result(self._parse_to_text(html))
             return
-        image_path = None
+
+        render_strategies = [
+            {"full_page": True, "type": "png", "scale": "device", "device_scale_factor_level": "ultra"},
+            {"full_page": True, "type": "jpeg", "quality": 100, "scale": "device", "device_scale_factor_level": "ultra"},
+            {"full_page": True, "type": "jpeg", "quality": 95, "scale": "device", "device_scale_factor_level": "high"},
+            {"full_page": True, "type": "jpeg", "quality": 80, "scale": "device"},
+        ]
+
         async with self.render_lock:
-            try:
-                if hasattr(self, "html_render"):
-                    image_path = await self.html_render(html, {"viewport": {"width": 790}})
-                    if image_path: 
-                        yield event.chain_result([Image(file=image_path), Plain(f"\n✨ {title}")])
-            except Exception as e: 
-                logger.warning(f"[UApiPro] 渲染失败: {e}")
-            finally:
-                if image_path and os.path.exists(image_path):
-                    with contextlib.suppress(OSError): 
-                        os.remove(image_path)
-        
-        if not image_path: 
-            reason = "⚠️ 渲染服务器故障 (T2I Endpoint Error)，已自动切换至文本模式：\n\n"
-            yield event.plain_result(reason + self._parse_to_text(html))
+            if not hasattr(self, "html_render"):
+                yield event.plain_result(self._parse_to_text(html))
+                return
+
+            for options in render_strategies:
+                try:
+                    image_data = await self.html_render(html, {}, False, options)
+                    if not image_data:
+                        continue
+
+                    # 获取原始字节
+                    raw = None
+                    if isinstance(image_data, bytes):
+                        raw = image_data
+                    elif isinstance(image_data, str) and os.path.exists(image_data):
+                        with open(image_data, "rb") as f:
+                            raw = f.read()
+                        with contextlib.suppress(OSError):
+                            os.remove(image_data)
+
+                    if not raw:
+                        continue
+
+                    # 校验是否为真实图片
+                    if raw[:2] == b'\xff\xd8' or raw[:4] == b'\x89PNG':
+                        b64 = _base64.b64encode(raw).decode()
+                        yield event.chain_result([Image(file=f"base64://{b64}"), Plain(f"\n✨ {title}")])
+                        return
+
+                    logger.warning(f"[UApiPro] 策略 {options} 返回非图片数据，尝试下一个")
+                except Exception as e:
+                    logger.warning(f"[UApiPro] 策略 {options} 失败: {e}，尝试下一个")
+
+        yield event.plain_result("⚠️ 渲染服务器故障，已自动切换至文本模式：\n\n" + self._parse_to_text(html))
 
     async def _check_cd(self, event) -> tuple[bool, float]:
         user_id = event.get_sender_id()
@@ -339,7 +366,7 @@ class UApiProPlugin(Star):
             title = m.group(1).strip() if m else "查询结果"
             res = [f"📊 {title}", "━━━━━━━━━━━━━━"]
             
-            sections = re.findall(r'item-label">(.*?)</div>.*?item-value">(.*?)</div>', html, re.S)
+            sections = re.findall(r'item-label">\s*<div[^>]+></div>\s*(.*?)</div>.*?item-value">(.*?)</div>', html, re.S)
             
             for label_html, val_html in sections:
                 label = re.sub(r'<[^>]+>', '', label_html).strip()
