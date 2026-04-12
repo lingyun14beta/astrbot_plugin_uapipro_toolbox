@@ -51,7 +51,7 @@ def render_card(title: str, icon: str, fields: list[tuple[str, str]], accent_col
     <html>
     <head>
         <meta charset="UTF-8">
-        <meta name="viewport" content="width=790">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <style>
             * {{ box-sizing: border-box; margin: 0; padding: 0; }}
             
@@ -59,10 +59,12 @@ def render_card(title: str, icon: str, fields: list[tuple[str, str]], accent_col
             html, body {{ background: #FFFFFF; }}
 
             body {{ 
-                width: fit-content;
-                display: inline-block; 
+                min-width: 100vw;
+                display: flex;
+                justify-content: center;
+                align-items: flex-start;
                 font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", sans-serif; 
-                padding: 45px; /* 四周均匀呼吸边距 */
+                padding: 45px;
                 text-align: center;
             }}
             
