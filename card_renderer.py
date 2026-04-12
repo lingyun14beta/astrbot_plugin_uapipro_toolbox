@@ -1,130 +1,153 @@
-"""
-card_renderer.py
-功能：将 API 数据渲染为精美的 HTML 卡片
-修复：CSS 语法闭合、变量转义增强、PEP 8 规范化导入
-"""
-
 import html
 import re
 from datetime import datetime
 
+IMAGE_WHITELIST = [
+    r"textures\.minecraft\.net",
+    r"uapis\.cn",
+    r".+\.qlogo\.cn",
+    r"q\.qlogo\.cn"
+]
+
+
 def render_card(title: str, icon: str, fields: list[tuple[str, str]], accent_color: str = "#5B9BD5", footer: str = "Powered by UApiPro") -> str:
     """
     渲染 HTML 卡片
+    优化：全白背景融合设计，加深投影效果，消除视觉留白感
     """
-    # 基础内容强制转义
     safe_title = html.escape(title)
     safe_icon = html.escape(icon)
     safe_footer = html.escape(footer)
     safe_accent_color = html.escape(accent_color)
     
     sections_html = ""
+    whitelist_regex = "|".join(IMAGE_WHITELIST)
+
     for label, value in fields:
         s_label = html.escape(str(label))
         val_str = str(value)
 
-        # Favicon 安全处理
         if val_str.startswith("data:image/") and ";base64," in val_str:
-            # Base64 图标路径：受控生成
-            s_value = f'<img src="{val_str}" style="width:100px; height:100px; border-radius:12px; object-fit: contain;">'
-        elif val_str.startswith("https://") and re.match(r'^https://[a-zA-Z0-9./\-_]+$', val_str):
-            # HTTPS URL 路径：带隐私保护
-            s_value = f'<img src="{val_str}" referrerpolicy="no-referrer" style="width:100px; height:100px; border-radius:12px; object-fit: contain;">'
+            s_value = f'<div class="img-box"><img src="{val_str}"></div>'
+        elif re.match(rf'^https?://({whitelist_regex})/', val_str):
+            s_value = f'<div class="img-box"><img src="{val_str}" referrerpolicy="no-referrer"></div>'
         else:
-            # 普通文本：处理换行[cite: 7]
             s_value = html.escape(val_str).replace("\n", "<br>")
 
         sections_html += f"""
-        <div class="section">
-            <div class="section-title">
+        <div class="item">
+            <div class="item-label">
                 <div class="dot" style="background:{safe_accent_color};"></div>
                 {s_label}
             </div>
-            <div class="section-content">{s_value}</div>
+            <div class="item-value">{s_value}</div>
         </div>
         """
 
-    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    now = datetime.now().strftime("%Y-%m-%d %H:%M")
     
-    # 核心修复：重构 CSS 确保大括号和属性完全闭合，解决 AI 报告中的截断问题[cite: 7]
     return f"""
     <!DOCTYPE html>
     <html>
     <head>
         <meta charset="UTF-8">
+        <meta name="viewport" content="width=790">
         <style>
             * {{ box-sizing: border-box; margin: 0; padding: 0; }}
-            body {{ width: 100%; background: #F4F7F9; font-family: sans-serif; padding: 40px; }}
-            .container {{ width: 100%; background: white; border-radius: 40px; box-shadow: 0 20px 60px rgba(0,0,0,0.1); overflow: hidden; }}
             
-            /* 修复：确保 background 渐变参数完整闭合 */
-            .header {{ 
-                background: linear-gradient(135deg, {safe_accent_color} 0%, #FFFFFF 200%); 
-                padding: 70px 60px; 
-                text-align: center; 
-                color: white; 
+            /* 核心修复：全白背景消除画布割裂感 */
+            html, body {{ background: #FFFFFF; }}
+
+            body {{ 
+                width: fit-content;
+                display: inline-block; 
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", sans-serif; 
+                padding: 45px; /* 四周均匀呼吸边距 */
+                text-align: center;
             }}
             
-            .header-icon {{ font-size: 100px; margin-bottom: 20px; display: block; }}
-            .header-title {{ 
-                font-size: 60px; 
-                font-weight: bold; 
-                letter-spacing: 4px; 
-                color: white; 
-                text-shadow: 0 4px 10px rgba(0,0,0,0.1); 
+            .card {{
+                width: 700px;
+                background: #FFFFFF;
+                border-radius: 45px;
+                /* 关键修复：加深阴影使白底上的白卡片具有立体感 */
+                box-shadow: 0 20px 60px rgba(0,0,0,0.08), 0 5px 15px rgba(0,0,0,0.04);
+                overflow: hidden;
+                border: 1px solid rgba(0,0,0,0.05);
+                text-align: left;
             }}
-            
-            .main {{ padding: 40px 60px; }}
-            
-            /* 修复：确保 border 属性定义完整 */
-            .section {{ 
-                background: white; 
-                border: 3px solid #EDF2F7; 
-                border-radius: 30px; 
-                padding: 45px; 
-                margin-bottom: 35px; 
+
+            .header {{
+                padding: 50px 45px;
+                display: flex;
+                align-items: center;
+                gap: 20px;
+                border-bottom: 2px solid #F5F5F7;
             }}
-            
-            .section-title {{ 
-                font-size: 32px; 
-                color: #94A3B8; 
-                font-weight: 600; 
-                margin-bottom: 15px; 
-                display: flex; 
-                align-items: center; 
-                gap: 15px; 
+
+            .header-icon-box {{
+                width: 90px; height: 90px;
+                background: #F5F5F7;
+                border-radius: 26px;
+                display: flex; align-items: center; justify-content: center;
+                font-size: 55px;
+                flex-shrink: 0;
             }}
-            
-            .dot {{ width: 12px; height: 36px; border-radius: 6px; }}
-            .section-content {{ 
-                font-size: 46px; 
-                color: #2D3748; 
-                line-height: 1.6; 
-                font-weight: 500; 
-                word-wrap: break-word; 
+
+            .header-text-box {{ flex: 1; min-width: 0; }}
+
+            .header-title {{
+                font-size: 36px; font-weight: 800; color: #1D1D1F; line-height: 1.3;
+                overflow-wrap: break-word;
+                word-break: break-word;
             }}
-            
-            .footer {{ 
-                padding: 40px 60px; 
-                background: #F8FAFC; 
-                border-top: 3px solid #EDF2F7; 
-                display: flex; 
-                justify-content: space-between; 
-                align-items: center; 
+
+            .content {{ padding: 35px 45px 45px 45px; }}
+
+            .item {{ margin-bottom: 35px; }}
+            .item:last-child {{ margin-bottom: 0; }}
+
+            .item-label {{
+                font-size: 21px; font-weight: 600; color: #86868B;
+                margin-bottom: 12px;
+                display: flex; align-items: center; gap: 10px;
+                text-transform: uppercase; letter-spacing: 0.8px;
             }}
-            .footer-text {{ color: #A0AEC0; font-size: 28px; }}
+
+            .dot {{ width: 6px; height: 24px; border-radius: 4px; }}
+
+            .item-value {{
+                font-size: 30px; font-weight: 500; color: #1D1D1F; line-height: 1.5;
+                overflow-wrap: break-word;
+                word-break: break-word;
+            }}
+
+            .img-box {{
+                margin-top: 15px; border-radius: 20px; overflow: hidden;
+                display: inline-block; max-width: 100%;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            }}
+
+            .img-box img {{ max-width: 100%; display: block; }}
+
+            .footer {{
+                padding: 30px 45px; background: #FBFBFC;
+                display: flex; justify-content: space-between;
+                font-size: 19px; color: #AEAEB2; font-weight: 500;
+                border-top: 1px solid #F5F5F7;
+            }}
         </style>
     </head>
     <body>
-        <div class="container">
+        <div class="card">
             <div class="header">
-                <span class="header-icon">{safe_icon}</span>
-                <span class="header-title">{safe_title}</span>
+                <div class="header-icon-box">{safe_icon}</div>
+                <div class="header-text-box"><div class="header-title">{safe_title}</div></div>
             </div>
-            <div class="main">{sections_html}</div>
+            <div class="main"><div class="content">{sections_html}</div></div>
             <div class="footer">
-                <span class="footer-text">{safe_footer}</span>
-                <span class="footer-text">{now}</span>
+                <span>{safe_footer}</span>
+                <span>{now}</span>
             </div>
         </div>
     </body>
