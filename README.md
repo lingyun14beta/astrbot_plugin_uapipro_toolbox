@@ -1,4 +1,4 @@
-# 📦 UApiPro-Toolbox 工具箱插件 v2.1.1
+# 📦 UApiPro-Toolbox 工具箱插件 v2.1.2
 
 本插件是为 **AstrBot** 机器人框架开发的综合功能包。它通过集成 [UApiPro](https://uapis.cn) 提供的开放接口，为机器人提供精美的图文交互体验。在将来也会适配更多接口，尽请期待。
 欢迎提issue或pr增加功能。
