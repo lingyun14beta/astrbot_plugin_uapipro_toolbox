@@ -14,12 +14,15 @@ async def fetch(arg_str: str, token: str, session: aiohttp.ClientSession = None)
     """
     params = {"resolution": "4k", "format": "json"}
     arg = arg_str.strip()
-    if arg and re.match(r"^\d{4}-\d{2}-\d{2}$", arg):
-        params["date"] = arg
+    if arg:
+        if re.match(r"^\d{4}-\d{2}-\d{2}$", arg):
+            params["date"] = arg
+        else:
+            return False, "", "❌ 日期格式错误，请使用 YYYY-MM-DD 格式。\n示例：/u 必应 2023-10-01"
 
     local_session = False
     if session is None:
-        headers = {"User-Agent": "AstrBot_UApiPro", "Token": token}
+        headers = {"User-Agent": "AstrBot_UApiPro", "Token": token, "Authorization": f"Bearer {token}"}
         session = aiohttp.ClientSession(headers=headers)
         local_session = True
 
