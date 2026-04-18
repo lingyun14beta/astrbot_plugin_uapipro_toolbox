@@ -75,11 +75,21 @@ class UApiProPlugin(Star):
                 with contextlib.suppress(OSError):
                     os.remove(data)
 
+    def _extract_arg(self, event: AstrMessageEvent, pattern: str) -> str:
+        """从消息中提取指令参数，兼容 AstrBot 别名（别名触发时 message_str 不含原始前缀）"""
+        msg = event.message_str.strip()
+        parts = re.split(pattern, msg, maxsplit=1)
+        if len(parts) > 1:
+            return parts[-1].strip()
+        # 别名触发：正则未命中，剥离第一个空格前的 token（即别名本身）
+        tokens = msg.split(maxsplit=1)
+        return tokens[1].strip() if len(tokens) > 1 else ''
+
     async def _handle_query(self, event: AstrMessageEvent, api_module: str, pattern: str, title: str, max_len: int = 150):
         if api_module not in self.ALLOWED_MODULES:
             yield event.plain_result("❌ 调用的模块未授权")
             return
-        arg = re.split(pattern, event.message_str.strip(), maxsplit=1)[-1].strip()
+        arg = self._extract_arg(event, pattern)
         if not arg:
             usage_hint = pattern.replace(r'u\s+', '/u ')
             yield event.plain_result(f"❓ 用法示例：{usage_hint} <内容>")
@@ -113,7 +123,7 @@ class UApiProPlugin(Star):
 
     @filter.command("u mc玩家")
     async def cmd_mc_user(self, event: AstrMessageEvent):
-        arg = re.split(r"u\s+mc玩家", event.message_str.strip(), maxsplit=1)[-1].strip()
+        arg = self._extract_arg(event, r"u\s+mc玩家")
         from .apis import mc_user
         async for r in self._relay(event, mc_user.fetch(arg, self.plugin_config.get("uapi_token", ""), session=self.session), "MC玩家资料"):
             yield r
@@ -134,14 +144,14 @@ class UApiProPlugin(Star):
 
     @filter.command("u 随机")
     async def cmd_random_str(self, event: AstrMessageEvent):
-        arg = re.split(r"u\s+随机", event.message_str.strip(), maxsplit=1)[-1].strip()
+        arg = self._extract_arg(event, r"u\s+随机")
         from .apis import random_str
         async for r in self._relay(event, random_str.fetch(arg, self.plugin_config.get("uapi_token", ""), session=self.session), "随机字符串"):
             yield r
 
     @filter.command("u 万年历")
     async def cmd_holiday(self, event: AstrMessageEvent):
-        arg = re.split(r"u\s+万年历", event.message_str.strip(), maxsplit=1)[-1].strip()
+        arg = self._extract_arg(event, r"u\s+万年历")
         from .apis import holiday
         async for r in self._relay(event, holiday.fetch(arg, self.plugin_config.get("uapi_token", ""), session=self.session), "万年历查询"):
             yield r
@@ -154,63 +164,63 @@ class UApiProPlugin(Star):
     
     @filter.command("u 必应")
     async def cmd_bing_daily(self, event: AstrMessageEvent):
-        arg = re.split(r"u\s+必应", event.message_str.strip(), maxsplit=1)[-1].strip()
+        arg = self._extract_arg(event, r"u\s+必应")
         from .apis import bing_daily
         async for r in self._relay(event, bing_daily.fetch(arg, self.plugin_config.get("uapi_token", ""), session=self.session), "必应每日壁纸"):
             yield r
 
     @filter.command("u 答案之书")
     async def cmd_answer_book(self, event: AstrMessageEvent):
-        arg = re.split(r"u\s+答案之书", event.message_str.strip(), maxsplit=1)[-1].strip()
+        arg = self._extract_arg(event, r"u\s+答案之书")
         from .apis import answer_book
         async for r in self._relay(event, answer_book.fetch(arg, self.plugin_config.get("uapi_token", ""), session=self.session), "答案之书"):
             yield r
     
     @filter.command("u 二维码")
     async def cmd_qrcode(self, event: AstrMessageEvent):
-        arg = re.split(r"u\s+二维码", event.message_str.strip(), maxsplit=1)[-1].strip()
+        arg = self._extract_arg(event, r"u\s+二维码")
         from .apis import qrcode
         async for r in self._relay(event, qrcode.fetch(arg, self.plugin_config.get("uapi_token", ""), session=self.session), "二维码生成"):
             yield r
 
     @filter.command("u whois")
     async def cmd_whois(self, event: AstrMessageEvent):
-        arg = re.split(r"u\s+whois", event.message_str.strip(), maxsplit=1)[-1].strip()
+        arg = self._extract_arg(event, r"u\s+whois")
         from .apis import whois
         async for r in self._relay(event, whois.fetch(arg, self.plugin_config.get("uapi_token", ""), session=self.session), "WHOIS查询"):
             yield r
     
     @filter.command("u icp")
     async def cmd_icp(self, event: AstrMessageEvent):
-        arg = re.split(r"u\s+icp", event.message_str.strip(), maxsplit=1)[-1].strip()
+        arg = self._extract_arg(event, r"u\s+icp")
         from .apis import icp
         async for r in self._relay(event, icp.fetch(arg, self.plugin_config.get("uapi_token", ""), session=self.session), "ICP备案查询"):
             yield r
 
     @filter.command("u 快递")
     async def cmd_tracking(self, event: AstrMessageEvent):
-        arg = re.split(r"u\s+快递", event.message_str.strip(), maxsplit=1)[-1].strip()
+        arg = self._extract_arg(event, r"u\s+快递")
         from .apis import tracking
         async for r in self._relay(event, tracking.fetch(arg, self.plugin_config.get("uapi_token", ""), session=self.session), "快递物流查询"):
             yield r
 
     @filter.command("u github")
     async def cmd_github(self, event: AstrMessageEvent):
-        arg = re.split(r"u\s+github", event.message_str.strip(), maxsplit=1)[-1].strip()
+        arg = self._extract_arg(event, r"u\s+github")
         from .apis import github
         async for r in self._relay(event, github.fetch(arg, self.plugin_config.get("uapi_token", ""), session=self.session), "GitHub仓库信息"):
             yield r
 
     @filter.command("u steam")
     async def cmd_steam(self, event: AstrMessageEvent):
-        arg = re.split(r"u\s+steam", event.message_str.strip(), maxsplit=1)[-1].strip()
+        arg = self._extract_arg(event, r"u\s+steam")
         from .apis import steam_user
         async for r in self._relay(event, steam_user.fetch(arg, self.plugin_config.get("uapi_token", ""), session=self.session), "Steam用户信息"):
             yield r
     
     @filter.command("u bili")
     async def cmd_bili(self, event: AstrMessageEvent):
-        arg = re.split(r"u\s+bili", event.message_str.strip(), maxsplit=1)[-1].strip()
+        arg = self._extract_arg(event, r"u\s+bili")
         from .apis import bili
         async for r in self._relay(event, bili.fetch(arg, self.plugin_config.get("uapi_token", ""), session=self.session), "B站投稿列表"):
             yield r
