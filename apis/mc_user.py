@@ -22,6 +22,9 @@ async def fetch(arg_str: str, token: str, session: aiohttp.ClientSession = None)
     if not username:
         return False, "", usage_hint
 
+    if len(username) > 20:
+        return False, "", "❌ 用户名过长，MC 正版用户名最长 16 字符。"
+
     local_session = False
     if session is None:
         headers = {
