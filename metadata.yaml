@@ -11,7 +11,7 @@ desc: 调用 UApiPro 提供的免费 API，支持一言、天气、IP 查询，�
 help: 插件提供多种实用查询指令，请查看 README.md 获取详细说明，或发送 /u 帮助 查看指令列表。
 
 # 插件版本号
-version: 2.2.0
+version: 2.2.1
 
 # 作者名
 author: lingyun
