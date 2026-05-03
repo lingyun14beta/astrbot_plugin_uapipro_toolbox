@@ -11,6 +11,12 @@
         "type": "float",
         "default": 5.0
     },
+    "llm_tools_enabled": {
+        "description": "允许 LLM 自动调用工具",
+        "hint": "开启后 LLM 可根据对话内容自动调用查询工具；关闭后只能通过 /u 指令手动触发",
+        "type": "bool",
+        "default": false
+    },
     "uapi_text_mode": {
         "description": "纯文本回复模式",
         "hint": "开启后，机器人将只发送文字结果，不发送图片",
