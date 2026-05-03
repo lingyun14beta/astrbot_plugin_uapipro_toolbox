@@ -43,6 +43,10 @@ class UApiProPlugin(Star):
         self.last_call_times = {}
         self.bg_task = asyncio.create_task(self._news_scheduler())
 
+        # 注册 LLM function calling 工具
+        from .llm_tools import register_llm_tools
+        register_llm_tools(self)
+
     async def _relay(self, event: AstrMessageEvent, api_coro, fallback_title: str):
         event.should_call_llm(False)
         in_cd, remain = await self._check_cd(event)
