@@ -95,4 +95,10 @@ astrbot_plugin_uapipro/
 **文档最后更新：** 2026年5月3日
 *本插件仅供技术交流使用，请合理使用 API 接口并遵守相关法律法规。*
 
+## 致谢
+
+*   图像渲染策略参考自 [群日常分析总结插件](https://github.com/SXP-Simon/astrbot_plugin_qq_group_daily_analysis)
+
+---
+
 ![Moe Counter](https://count.getloli.com/get/@astrbot-uapipro-toolbox-lingyun?theme=moebooru)
