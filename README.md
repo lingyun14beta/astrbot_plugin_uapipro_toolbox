@@ -73,7 +73,7 @@ astrbot_plugin_uapipro/
 
 ## ⚙️ 插件设置说明
 
-您可以在 AstrBot Web 面板的**插件配置**中进行全中文可视化设置：
+您可以在 AstrBot Web 面板的`插件配置`中进行全中文可视化设置：
 
 *   **接口密钥 (Token)**: 填入您在 UApiPro 后台获取的专属 Token（可留空）。
 *   **随机图片库范围**: **多选下拉框**。支持勾选 `ACG`、`风景`等分类。机器人会仅从您勾选的范围中随机挑选。
@@ -94,3 +94,5 @@ astrbot_plugin_uapipro/
 ---
 **文档最后更新：** 2026年5月3日
 *本插件仅供技术交流使用，请合理使用 API 接口并遵守相关法律法规。*
+
+![Moe Counter](https://count.getloli.com/get/@astrbot-uapipro-toolbox-lingyun?theme=moebooru)
