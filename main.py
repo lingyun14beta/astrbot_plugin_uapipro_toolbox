@@ -410,7 +410,6 @@ class UApiProPlugin(Star):
         yield event.plain_result(msg)
 
     async def _news_scheduler(self):
-        last_date = None
         while True:
             await asyncio.sleep(30)
             try:
@@ -423,8 +422,9 @@ class UApiProPlugin(Star):
                     )
                     h, m = map(int, target_str.split(":"))
                     target_time = now.replace(hour=h, minute=m, second=0, microsecond=0)
-                    if now >= target_time and last_date != now.date():
-                        last_date = now.date()
+                    last_date = await self.get_kv_data("news_last_push_date", None)
+                    if now >= target_time and last_date != now.date().isoformat():
+                        await self.put_kv_data("news_last_push_date", now.date().isoformat())
                         await self._broadcast_news()
             except Exception as e:
                 logger.error(f"[UApiPro] 调度器异常: {e}")
