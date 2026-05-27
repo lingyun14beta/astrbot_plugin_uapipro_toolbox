@@ -16,8 +16,8 @@ async def fetch(arg_str: str, token: str, session: aiohttp.ClientSession = None)
     usage_hint = (
         "📺 B站查询规范：\n"
         "━━━━━━━━━━━━━━\n"
-        "用法：/u b站 <UID>\n"
-        "示例：/u b站 483307278"
+        "用法：/u bili <UID>\n"
+        "示例：/u bili 483307278"
     )
 
     mid = arg_str.strip()
