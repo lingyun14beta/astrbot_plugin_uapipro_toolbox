@@ -12,7 +12,6 @@ import importlib
 import os
 import contextlib
 import aiohttp
-from typing import AsyncGenerator
 from astrbot.api.event import filter, AstrMessageEvent
 from astrbot.api.star import Context, Star
 from astrbot.api import logger
@@ -21,23 +20,40 @@ from astrbot.api.message_components import Image, Plain
 
 class UApiProPlugin(Star):
     ALLOWED_MODULES = {
-        "weather", "ipquery", "mcquery", "hitokoto", 
-        "random_img", "news", "random_str", "holiday", 
-        "mc_user", "epic", "bing_daily", "answer_book", "qrcode", "whois", "tracking",
-        "github", "steam_user", "bili", "icp"
+        "weather",
+        "ipquery",
+        "mcquery",
+        "hitokoto",
+        "random_img",
+        "news",
+        "random_str",
+        "holiday",
+        "mc_user",
+        "epic",
+        "bing_daily",
+        "answer_book",
+        "qrcode",
+        "whois",
+        "tracking",
+        "github",
+        "steam_user",
+        "bili",
+        "icp",
     }
 
     def __init__(self, context: Context, config: dict):
         super().__init__(context)
         self.plugin_config = config
-        
+
         headers = {
             "User-Agent": "AstrBot_UApiPro",
             "Token": config.get("uapi_token", ""),
-            "Authorization": f"Bearer {config.get('uapi_token', '')}"
+            "Authorization": f"Bearer {config.get('uapi_token', '')}",
         }
-        self.session = aiohttp.ClientSession(headers=headers, timeout=aiohttp.ClientTimeout(total=30))
-        
+        self.session = aiohttp.ClientSession(
+            headers=headers, timeout=aiohttp.ClientTimeout(total=30)
+        )
+
         self.render_lock = asyncio.Lock()
         self.cd_lock = asyncio.Lock()
         self.last_call_times = {}
@@ -46,22 +62,23 @@ class UApiProPlugin(Star):
         # 注册 LLM function calling 工具（仅在开关开启时）
         if self.plugin_config.get("llm_tools_enabled", False):
             from .llm_tools import register_llm_tools
+
             register_llm_tools(self)
 
     async def _relay(self, event: AstrMessageEvent, api_coro, fallback_title: str):
         event.should_call_llm(False)
         in_cd, remain = await self._check_cd(event)
-        if in_cd: 
+        if in_cd:
             yield event.plain_result(f"⏰ 冷却中: 还剩 {remain} 秒")
             return
 
         try:
-            ok, data, err = await api_coro 
+            ok, data, err = await api_coro
         except Exception as e:
             logger.error(f"[UApiPro] API 执行异常: {e}")
             yield event.plain_result("❌ 插件内部执行异常")
             return
-        
+
         if not ok:
             yield event.plain_result(err or "❌ 请求失败，请稍后再试。")
             return
@@ -70,7 +87,7 @@ class UApiProPlugin(Star):
             if isinstance(data, str) and ("<html" in data.lower() or "<style" in data):
                 async for r in self._send_analysis_report(event, data, fallback_title):
                     yield r
-            elif isinstance(data, str) and data.endswith(('.jpg', '.png', '.jpeg')):
+            elif isinstance(data, str) and data.endswith((".jpg", ".png", ".jpeg")):
                 caption = err if (err and len(err) > 20) else f"✨ {fallback_title}"
                 yield event.chain_result([Image(file=data), Plain(f"\n{caption}")])
             else:
@@ -88,15 +105,22 @@ class UApiProPlugin(Star):
             return parts[-1].strip()
         # 别名触发：正则未命中，剥离第一个空格前的 token（即别名本身）
         tokens = msg.split(maxsplit=1)
-        return tokens[1].strip() if len(tokens) > 1 else ''
+        return tokens[1].strip() if len(tokens) > 1 else ""
 
-    async def _handle_query(self, event: AstrMessageEvent, api_module: str, pattern: str, title: str, max_len: int = 150):
+    async def _handle_query(
+        self,
+        event: AstrMessageEvent,
+        api_module: str,
+        pattern: str,
+        title: str,
+        max_len: int = 150,
+    ):
         if api_module not in self.ALLOWED_MODULES:
             yield event.plain_result("❌ 调用的模块未授权")
             return
         arg = self._extract_arg(event, pattern)
         if not arg:
-            usage_hint = pattern.replace(r'u\s+', '/u ')
+            usage_hint = pattern.replace(r"u\s+", "/u ")
             yield event.plain_result(f"❓ 用法示例：{usage_hint} <内容>")
             return
         if len(arg) > max_len:
@@ -104,139 +128,259 @@ class UApiProPlugin(Star):
             return
         try:
             module = importlib.import_module(f".apis.{api_module}", __package__)
-            api_coro = module.fetch(arg, self.plugin_config.get("uapi_token", ""), session=self.session)
+            api_coro = module.fetch(
+                arg, self.plugin_config.get("uapi_token", ""), session=self.session
+            )
             async for r in self._relay(event, api_coro, title):
                 yield r
         except Exception as e:
             logger.error(f"[UApiPro] 模块 {api_module} 加载失败: {e}")
-            yield event.plain_result(f"❌ 功能模块执行失败")
+            yield event.plain_result("❌ 功能模块执行失败")
 
-    @filter.command("u 天气")
+    @filter.command("u 天气", desc="查询城市天气")
     async def cmd_weather(self, event: AstrMessageEvent):
-        async for r in self._handle_query(event, "weather", r"u\s+天气", "天气报告", max_len=40):
+        async for r in self._handle_query(
+            event, "weather", r"u\s+天气", "天气报告", max_len=40
+        ):
             yield r
 
-    @filter.command("u ip")
+    @filter.command("u ip", desc="IP归属地查询")
     async def cmd_ip(self, event: AstrMessageEvent):
-        async for r in self._handle_query(event, "ipquery", r"u\s+ip", "IP查询结果", max_len=100):
+        async for r in self._handle_query(
+            event, "ipquery", r"u\s+ip", "IP查询结果", max_len=100
+        ):
             yield r
 
-    @filter.command("u mc")
+    @filter.command("u mc", desc="MC服务器状态")
     async def cmd_mc(self, event: AstrMessageEvent):
-        async for r in self._handle_query(event, "mcquery", r"u\s+mc", "MC服务器状态", max_len=100):
+        async for r in self._handle_query(
+            event, "mcquery", r"u\s+mc", "MC服务器状态", max_len=100
+        ):
             yield r
 
-    @filter.command("u mc玩家")
+    @filter.command("u mc玩家", desc="MC正版玩家信息")
     async def cmd_mc_user(self, event: AstrMessageEvent):
         arg = self._extract_arg(event, r"u\s+mc玩家")
         from .apis import mc_user
-        async for r in self._relay(event, mc_user.fetch(arg, self.plugin_config.get("uapi_token", ""), session=self.session), "MC玩家资料"):
+
+        async for r in self._relay(
+            event,
+            mc_user.fetch(
+                arg, self.plugin_config.get("uapi_token", ""), session=self.session
+            ),
+            "MC玩家资料",
+        ):
             yield r
 
-    @filter.command("u 一言")
+    @filter.command("u 一言", desc="随机一句话")
     async def cmd_hitokoto(self, event: AstrMessageEvent):
         from .apis import hitokoto
-        async for r in self._relay(event, hitokoto.fetch(self.plugin_config.get("uapi_token", ""), session=self.session), "今日一言"):
+
+        async for r in self._relay(
+            event,
+            hitokoto.fetch(
+                self.plugin_config.get("uapi_token", ""), session=self.session
+            ),
+            "今日一言",
+        ):
             yield r
 
-    @filter.command("u 随机图片")
+    @filter.command("u 随机图片", desc="随机壁纸")
     async def cmd_random_img(self, event: AstrMessageEvent):
         cats = self.plugin_config.get("random_img_categories", [])
         selected = random.choice(cats) if cats else None
         from .apis import random_img
-        async for r in self._relay(event, random_img.fetch(selected, token=self.plugin_config.get("uapi_token", ""), session=self.session), f"随机图片 ({selected})"):
+
+        async for r in self._relay(
+            event,
+            random_img.fetch(
+                selected,
+                token=self.plugin_config.get("uapi_token", ""),
+                session=self.session,
+            ),
+            f"随机图片 ({selected})",
+        ):
             yield r
 
-    @filter.command("u 随机")
+    @filter.command("u 随机", desc="生成随机字符串")
     async def cmd_random_str(self, event: AstrMessageEvent):
         arg = self._extract_arg(event, r"u\s+随机")
         from .apis import random_str
-        async for r in self._relay(event, random_str.fetch(arg, self.plugin_config.get("uapi_token", ""), session=self.session), "随机字符串"):
+
+        async for r in self._relay(
+            event,
+            random_str.fetch(
+                arg, self.plugin_config.get("uapi_token", ""), session=self.session
+            ),
+            "随机字符串",
+        ):
             yield r
 
-    @filter.command("u 万年历")
+    @filter.command("u 万年历", desc="节假日/日历查询")
     async def cmd_holiday(self, event: AstrMessageEvent):
         arg = self._extract_arg(event, r"u\s+万年历")
         from .apis import holiday
-        async for r in self._relay(event, holiday.fetch(arg, self.plugin_config.get("uapi_token", ""), session=self.session), "万年历查询"):
+
+        async for r in self._relay(
+            event,
+            holiday.fetch(
+                arg, self.plugin_config.get("uapi_token", ""), session=self.session
+            ),
+            "万年历查询",
+        ):
             yield r
-    
-    @filter.command("u epic")
+
+    @filter.command("u epic", desc="Epic本周免费游戏")
     async def cmd_epic(self, event: AstrMessageEvent):
         from .apis import epic
-        async for r in self._relay(event, epic.fetch("", self.plugin_config.get("uapi_token", ""), session=self.session), "Epic免费游戏"):
+
+        async for r in self._relay(
+            event,
+            epic.fetch(
+                "", self.plugin_config.get("uapi_token", ""), session=self.session
+            ),
+            "Epic免费游戏",
+        ):
             yield r
-    
-    @filter.command("u 必应")
+
+    @filter.command("u 必应", desc="必应每日壁纸")
     async def cmd_bing_daily(self, event: AstrMessageEvent):
         arg = self._extract_arg(event, r"u\s+必应")
         from .apis import bing_daily
-        async for r in self._relay(event, bing_daily.fetch(arg, self.plugin_config.get("uapi_token", ""), session=self.session), "必应每日壁纸"):
+
+        async for r in self._relay(
+            event,
+            bing_daily.fetch(
+                arg, self.plugin_config.get("uapi_token", ""), session=self.session
+            ),
+            "必应每日壁纸",
+        ):
             yield r
 
-    @filter.command("u 答案之书")
+    @filter.command("u 答案之书", desc="随机答案")
     async def cmd_answer_book(self, event: AstrMessageEvent):
         arg = self._extract_arg(event, r"u\s+答案之书")
         from .apis import answer_book
-        async for r in self._relay(event, answer_book.fetch(arg, self.plugin_config.get("uapi_token", ""), session=self.session), "答案之书"):
+
+        async for r in self._relay(
+            event,
+            answer_book.fetch(
+                arg, self.plugin_config.get("uapi_token", ""), session=self.session
+            ),
+            "答案之书",
+        ):
             yield r
-    
-    @filter.command("u 二维码")
+
+    @filter.command("u 二维码", desc="生成二维码")
     async def cmd_qrcode(self, event: AstrMessageEvent):
         arg = self._extract_arg(event, r"u\s+二维码")
         from .apis import qrcode
-        async for r in self._relay(event, qrcode.fetch(arg, self.plugin_config.get("uapi_token", ""), session=self.session), "二维码生成"):
+
+        async for r in self._relay(
+            event,
+            qrcode.fetch(
+                arg, self.plugin_config.get("uapi_token", ""), session=self.session
+            ),
+            "二维码生成",
+        ):
             yield r
 
-    @filter.command("u whois")
+    @filter.command("u whois", desc="域名WHOIS查询")
     async def cmd_whois(self, event: AstrMessageEvent):
         arg = self._extract_arg(event, r"u\s+whois")
         from .apis import whois
-        async for r in self._relay(event, whois.fetch(arg, self.plugin_config.get("uapi_token", ""), session=self.session), "WHOIS查询"):
+
+        async for r in self._relay(
+            event,
+            whois.fetch(
+                arg, self.plugin_config.get("uapi_token", ""), session=self.session
+            ),
+            "WHOIS查询",
+        ):
             yield r
-    
-    @filter.command("u icp")
+
+    @filter.command("u icp", desc="ICP备案查询")
     async def cmd_icp(self, event: AstrMessageEvent):
         arg = self._extract_arg(event, r"u\s+icp")
         from .apis import icp
-        async for r in self._relay(event, icp.fetch(arg, self.plugin_config.get("uapi_token", ""), session=self.session), "ICP备案查询"):
+
+        async for r in self._relay(
+            event,
+            icp.fetch(
+                arg, self.plugin_config.get("uapi_token", ""), session=self.session
+            ),
+            "ICP备案查询",
+        ):
             yield r
 
-    @filter.command("u 快递")
+    @filter.command("u 快递", desc="快递物流查询")
     async def cmd_tracking(self, event: AstrMessageEvent):
         arg = self._extract_arg(event, r"u\s+快递")
         from .apis import tracking
-        async for r in self._relay(event, tracking.fetch(arg, self.plugin_config.get("uapi_token", ""), session=self.session), "快递物流查询"):
+
+        async for r in self._relay(
+            event,
+            tracking.fetch(
+                arg, self.plugin_config.get("uapi_token", ""), session=self.session
+            ),
+            "快递物流查询",
+        ):
             yield r
 
-    @filter.command("u github")
+    @filter.command("u github", desc="GitHub仓库信息")
     async def cmd_github(self, event: AstrMessageEvent):
         arg = self._extract_arg(event, r"u\s+github")
         from .apis import github
-        async for r in self._relay(event, github.fetch(arg, self.plugin_config.get("uapi_token", ""), session=self.session), "GitHub仓库信息"):
+
+        async for r in self._relay(
+            event,
+            github.fetch(
+                arg, self.plugin_config.get("uapi_token", ""), session=self.session
+            ),
+            "GitHub仓库信息",
+        ):
             yield r
 
-    @filter.command("u steam")
+    @filter.command("u steam", desc="Steam用户信息")
     async def cmd_steam(self, event: AstrMessageEvent):
         arg = self._extract_arg(event, r"u\s+steam")
         from .apis import steam_user
-        async for r in self._relay(event, steam_user.fetch(arg, self.plugin_config.get("uapi_token", ""), session=self.session), "Steam用户信息"):
+
+        async for r in self._relay(
+            event,
+            steam_user.fetch(
+                arg, self.plugin_config.get("uapi_token", ""), session=self.session
+            ),
+            "Steam用户信息",
+        ):
             yield r
-    
-    @filter.command("u bili")
+
+    @filter.command("u bili", desc="B站UP主信息")
     async def cmd_bili(self, event: AstrMessageEvent):
         arg = self._extract_arg(event, r"u\s+bili")
         from .apis import bili
-        async for r in self._relay(event, bili.fetch(arg, self.plugin_config.get("uapi_token", ""), session=self.session), "B站投稿列表"):
+
+        async for r in self._relay(
+            event,
+            bili.fetch(
+                arg, self.plugin_config.get("uapi_token", ""), session=self.session
+            ),
+            "B站投稿列表",
+        ):
             yield r
 
-    @filter.command("u 新闻")
+    @filter.command("u 新闻", desc="每日新闻早报")
     async def cmd_news(self, event: AstrMessageEvent):
         from .apis import news
-        async for r in self._relay(event, news.fetch(self.plugin_config.get("uapi_token", ""), session=self.session), "每日新闻"):
+
+        async for r in self._relay(
+            event,
+            news.fetch(self.plugin_config.get("uapi_token", ""), session=self.session),
+            "每日新闻",
+        ):
             yield r
 
-    @filter.command("u 帮助")
+    @filter.command("u 帮助", desc="查看所有指令")
     async def cmd_help(self, event: AstrMessageEvent):
         msg = (
             "📦 UApiPro 工具箱\n"
@@ -272,55 +416,92 @@ class UApiProPlugin(Star):
             try:
                 if self.plugin_config.get("news_schedule_enabled", False):
                     now = datetime.datetime.now()
-                    target_str = self.plugin_config.get("news_schedule_time", "08:00").replace("：", ":").strip()
+                    target_str = (
+                        self.plugin_config.get("news_schedule_time", "08:00")
+                        .replace("：", ":")
+                        .strip()
+                    )
                     h, m = map(int, target_str.split(":"))
                     target_time = now.replace(hour=h, minute=m, second=0, microsecond=0)
                     if now >= target_time and last_date != now.date():
                         last_date = now.date()
                         await self._broadcast_news()
-            except Exception as e: 
+            except Exception as e:
                 logger.error(f"[UApiPro] 调度器异常: {e}")
 
     async def _broadcast_news(self):
+        logger.info("[UApiPro] 开始推送早报")
         from .apis import news
         from astrbot.api.event import MessageChain
-        groups, users = self.plugin_config.get("news_groups", []), self.plugin_config.get("news_users", [])
-        if not groups and not users: 
+
+        groups, users = (
+            self.plugin_config.get("news_groups", []),
+            self.plugin_config.get("news_users", []),
+        )
+        if not groups and not users:
             return
-        plat = "default"
+        plat = None
         try:
-            all_plats = self.context.get_all_platforms()
-            if all_plats: 
-                plat = list(all_plats.keys())[0]
-        except: 
+            plat_insts = self.context.platform_manager.platform_insts
+            if plat_insts:
+                plat = plat_insts[0].meta().id
+        except Exception:
             pass
-        ok, path, err = await news.fetch(self.plugin_config.get("uapi_token", ""), session=self.session)
-        if not ok: 
+        if not plat:
+            logger.warning("[UApiPro] 未找到任何已注册的平台，无法推送早报")
+            return
+        ok, path, err = await news.fetch(
+            self.plugin_config.get("uapi_token", ""), session=self.session
+        )
+        logger.info(f"[UApiPro] 新闻获取结果 ok={ok} err={err}")
+        if not ok:
             return
         try:
             for gid in groups:
                 umo = str(gid) if ":" in str(gid) else f"{plat}:GroupMessage:{gid}"
-                await self.context.send_message(umo, MessageChain().file_image(path).message("\n📰 每日早报"))
+                await self.context.send_message(
+                    umo, MessageChain().file_image(path).message("\n📰 每日早报")
+                )
                 await asyncio.sleep(1.5)
             for uid in users:
                 umo = str(uid) if ":" in str(uid) else f"{plat}:FriendMessage:{uid}"
-                await self.context.send_message(umo, MessageChain().file_image(path).message("\n📰 每日早报"))
+                await self.context.send_message(
+                    umo, MessageChain().file_image(path).message("\n📰 每日早报")
+                )
                 await asyncio.sleep(1.5)
         finally:
             if path and os.path.exists(path):
-                with contextlib.suppress(OSError): 
+                with contextlib.suppress(OSError):
                     os.remove(path)
 
     async def _send_analysis_report(self, event, html, title):
         import base64 as _base64
+
         if self.plugin_config.get("uapi_text_mode", False):
             yield event.plain_result(self._parse_to_text(html))
             return
 
         render_strategies = [
-            {"full_page": True, "type": "png", "scale": "device", "device_scale_factor_level": "ultra"},
-            {"full_page": True, "type": "jpeg", "quality": 100, "scale": "device", "device_scale_factor_level": "ultra"},
-            {"full_page": True, "type": "jpeg", "quality": 95, "scale": "device", "device_scale_factor_level": "high"},
+            {
+                "full_page": True,
+                "type": "png",
+                "scale": "device",
+                "device_scale_factor_level": "ultra",
+            },
+            {
+                "full_page": True,
+                "type": "jpeg",
+                "quality": 100,
+                "scale": "device",
+                "device_scale_factor_level": "ultra",
+            },
+            {
+                "full_page": True,
+                "type": "jpeg",
+                "quality": 95,
+                "scale": "device",
+                "device_scale_factor_level": "high",
+            },
             {"full_page": True, "type": "jpeg", "quality": 80, "scale": "device"},
         ]
 
@@ -349,28 +530,34 @@ class UApiProPlugin(Star):
                         continue
 
                     # 校验是否为真实图片
-                    if raw[:2] == b'\xff\xd8' or raw[:4] == b'\x89PNG':
+                    if raw[:2] == b"\xff\xd8" or raw[:4] == b"\x89PNG":
                         b64 = _base64.b64encode(raw).decode()
-                        yield event.chain_result([Image(file=f"base64://{b64}"), Plain(f"\n✨ {title}")])
+                        yield event.chain_result(
+                            [Image(file=f"base64://{b64}"), Plain(f"\n✨ {title}")]
+                        )
                         return
 
-                    logger.warning(f"[UApiPro] 策略 {options} 返回非图片数据，尝试下一个")
+                    logger.warning(
+                        f"[UApiPro] 策略 {options} 返回非图片数据，尝试下一个"
+                    )
                 except Exception as e:
                     logger.warning(f"[UApiPro] 策略 {options} 失败: {e}，尝试下一个")
 
-        yield event.plain_result("⚠️ 渲染服务器故障，已自动切换至文本模式：\n\n" + self._parse_to_text(html))
+        yield event.plain_result(
+            "⚠️ 渲染服务器故障，已自动切换至文本模式：\n\n" + self._parse_to_text(html)
+        )
 
     async def _check_cd(self, event) -> tuple[bool, float]:
         user_id = event.get_sender_id()
         async with self.cd_lock:
             if len(self.last_call_times) > 1000:
                 keys = list(self.last_call_times.keys())
-                for _ in range(200): 
-                    self.last_call_times.pop(random.choice(keys), None)
+                for k in random.sample(keys, min(200, len(keys))):
+                    self.last_call_times.pop(k, None)
             now = time.time()
             cd_sec = self.plugin_config.get("uapi_cd", 5.0)
             elapsed = now - self.last_call_times.get(user_id, 0)
-            if elapsed < cd_sec: 
+            if elapsed < cd_sec:
                 return True, round(cd_sec - elapsed, 1)
             self.last_call_times[user_id] = now
             return False, 0
@@ -380,26 +567,30 @@ class UApiProPlugin(Star):
             m = re.search(r'header-title">([^<]+)<', html)
             title = m.group(1).strip() if m else "查询结果"
             res = [f"📊 {title}", "━━━━━━━━━━━━━━"]
-            
-            sections = re.findall(r'item-label">\s*<div[^>]+></div>\s*(.*?)</div>.*?item-value">(.*?)</div>', html, re.S)
-            
+
+            sections = re.findall(
+                r'item-label">\s*<div[^>]+></div>\s*(.*?)</div>.*?item-value">(.*?)</div>',
+                html,
+                re.S,
+            )
+
             for label_html, val_html in sections:
-                label = re.sub(r'<[^>]+>', '', label_html).strip()
+                label = re.sub(r"<[^>]+>", "", label_html).strip()
                 val_raw = val_html.replace("<br>", "\n").replace("<br/>", "\n")
-                val_clean = re.sub(r'<[^>]+>', '', val_raw).strip()
-                
+                val_clean = re.sub(r"<[^>]+>", "", val_raw).strip()
+
                 if label and val_clean and "data:image" not in val_clean:
                     res.append(f"📍 {label}: {val_clean}")
-            
+
             if len(res) > 2:
                 return "\n".join(res)
             return f"📊 {title}\n抱歉，无法从页面提取有效文本数据。"
-        except: 
+        except Exception:
             return "📊 结果解析失败。"
 
     async def terminate(self):
-        if hasattr(self, 'session') and not self.session.closed: 
+        if hasattr(self, "session") and not self.session.closed:
             await self.session.close()
-        if hasattr(self, 'bg_task'): 
+        if hasattr(self, "bg_task"):
             self.bg_task.cancel()
         logger.info("[UApiPro] 插件卸载完成。")
