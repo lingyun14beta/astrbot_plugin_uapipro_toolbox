@@ -22,7 +22,7 @@
 插件采用**转接器模式**设计，实现了逻辑与展示的解耦：
 
 ```text
-astrbot_plugin_uapipro/
+astrbot_plugin_uapipro_toolbox/
 ├── main.py             # 核心调度：负责指令分发、安全守卫与文件清理
 ├── llm_tools.py        # LLM function calling 工具注册
 ├── _conf_schema.json   # 配置
@@ -34,7 +34,8 @@ astrbot_plugin_uapipro/
 │   ├── mcquery.py      # Minecraft 服务器状态查询
 │   ├── hitokoto.py     # 一言/语录获取
 │   ├── news.py         # 每日新闻摘要获取
-│   └── random_img.py   # 随机图片库获取
+│   ├── random_img.py   # 随机图片库获取
+│   └── ...             # 其他 API 模块
 └── README.md           # 项目说明文档
 ```
 
@@ -45,7 +46,7 @@ astrbot_plugin_uapipro/
 | 类别 | 指令格式 | 功能说明 | 亮点/限制 |
 | :--- | :--- | :--- | :--- |
 | **社交** 
-| |`/u b站 <UID>`               | 获取 UP 主详细档案及最新投稿作品 | **注意**：每次触发时会同时请求两个接口 |
+| |`/u bili <UID>`              | 获取 UP 主详细档案及最新投稿作品 | **注意**：每次触发时会同时请求两个接口 |
 | | `/u github <仓库/链接>`     | 查询 Star/Fork/语言分布/最新 Release | 自动识别 GitHub 链接 |
 | | `/u steam <ID/链接>`        | 展示玩家昵称、在线状态、勋章及头像 | 状态语义化转换 |
 | **游戏** 
@@ -68,6 +69,7 @@ astrbot_plugin_uapipro/
 | | `/u 一言`                    | 精选诗词、动漫台词或名言语录 | 极简微卡片展示 |
 | | `/u 新闻`                    | 获取今日全网热点新闻总结图 | 响应约 10-15s |
 | | `/u 随机图片`                | 随机发送指定分类的精美壁纸 | 根据面板勾选范围 |
+| | `/u 帮助`                    | 查看所有可用指令列表 |  |
 
 ---
 
@@ -81,7 +83,7 @@ astrbot_plugin_uapipro/
 *   **定时早报配置**:
     *   **推送开关**: 开启后每天自动执行推送任务。
     *   **具体时间**: 格式为 `HH:MM`。
-    *   **推送名单**: 支持多行输入群号或 QQ 号，实现跨平台精准送达。
+    *   **推送名单**: 支持多行输入群号或 QQ 号（直接填纯数字即可）。
 
 ---
 
