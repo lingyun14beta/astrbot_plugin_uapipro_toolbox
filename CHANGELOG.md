@@ -1,5 +1,9 @@
 # 更新日志 (CHANGELOG)
 
+## [v2.3.1] - 2026-05-27
+修复重载/重启插件后定时新闻重复推送的问题，改用 AstrBot 内置 KV 存储持久化推送日期
+
+
 ## [v2.3.0] - 2026-05-27
 ### 🐛 Bug 修复
 *   **📰 修复定时早报无法推送**: 修正 `context.get_all_platforms()` 不存在导致平台 ID 退回 `"default"`，进而触发 `cannot find platform` 报错的问题，改为直接读取 `platform_manager.platform_insts`。
