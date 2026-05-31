@@ -11,6 +11,12 @@
 ### 🔧 其他改进
 *   **📐 渲染截图留白修复**: `card_renderer.py` 改用 `display: table` + viewport 宽度锁定，渲染截图不再出现两侧及底部多余留白。
 *   **🔁 渲染策略对齐**: `cmd_hotboard` 补全第二条渲染策略（`quality: 100 + ultra`），与 `_send_analysis_report` 保持四级策略一致。
+  
+
+---
+
+<details>
+<summary>📋 点击查看历史更新日志</summary>
 
 ## [v2.3.1] - 2026-05-27
 ### 🐛 Bug 修复
@@ -24,12 +30,6 @@
 *   **🏷️ 补全面板指令描述**: 所有 `/u` 子指令补充 `desc=` 参数，面板不再显示"无描述"。
 *   **📖 修正 README**: 目录名、`/u b站` → `/u bili`、补充 `/u 帮助` 条目、`apis/` 列表末尾加 `...`。
 *   **🛠️ 修正 `bili.py` 用法提示**: `usage_hint` 中的指令名与实际注册名保持一致。
-
-
----
-
-<details>
-<summary>📋 点击查看历史更新日志</summary>
 
 ## [v2.2.1] - 2026-05-03
 ### ⚙️ 配置项新增
