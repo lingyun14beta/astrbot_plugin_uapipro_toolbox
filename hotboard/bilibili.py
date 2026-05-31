@@ -3,7 +3,7 @@ hotboard/bilibili.py — 哔哩哔哩热榜解析器
 取前5条，含封面缩略图和UP主信息。
 """
 
-LIMIT = 5
+LIMIT = 10
 THUMB_SUFFIX = "@160w_100h_1c.webp"
 
 
