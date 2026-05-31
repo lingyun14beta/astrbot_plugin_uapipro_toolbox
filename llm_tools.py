@@ -342,6 +342,87 @@ class RandomStrTool(FunctionTool[AstrAgentContext]):
         return await _call_api(random_str.fetch(arg, _token(), session=_session()))
 
 
+@dataclass
+class HotBoardTool(FunctionTool[AstrAgentContext]):
+    name: str = "uapi_hotboard"
+    description: str = (
+        "获取各大平台实时热榜，返回热榜条目列表（标题、热度、UP主/歌手等副信息）。"
+        "支持平台：bili（哔哩哔哩）、a站（AcFun）、github（HelloGitHub）、"
+        "网易云（网易云音乐）、qq音乐（QQ音乐）、微信读书。"
+    )
+    parameters: dict = Field(default_factory=lambda: {
+        "type": "object",
+        "properties": {
+            "platform": {
+                "type": "string",
+                "description": "平台别名，可选：bili、a站、github、网易云、qq音乐、微信读书"
+            }
+        },
+        "required": ["platform"]
+    })
+
+    async def call(self, context: ContextWrapper[AstrAgentContext], **kwargs) -> ToolExecResult:
+        from .hotboard.fetcher import fetch, PLATFORM_MAP
+        platform = kwargs.get("platform", "").strip().lower()
+        if not platform:
+            return "请提供平台名称，例如：bili、网易云、github"
+        if platform not in PLATFORM_MAP:
+            supported = "、".join(PLATFORM_MAP.keys())
+            return f"不支持的平台「{platform}」，支持的平台有：{supported}"
+        try:
+            ok, payload, err = await fetch(platform, _token(), session=_session())
+        except Exception as e:
+            return f"调用失败：{e}"
+        if not ok:
+            return err or "请求失败，请稍后再试。"
+
+        items        = payload["items"]
+        display_name = payload["display_name"]
+        platform_id  = payload["platform_id"]
+
+        lines = [f"{display_name} 热榜"]
+        for item in items:
+            rank  = item["index"]
+            title = item["title"]
+            hot   = item.get("hot_value", "")
+            extra = item.get("extra", {})
+
+            parts = [f"#{rank} {title}"]
+            if hot:
+                parts.append(hot)
+
+            if platform_id == "bilibili":
+                up = extra.get("up_name", "")
+                if up:
+                    parts.append(f"UP: {up}")
+            elif platform_id == "hellogithub":
+                lang = extra.get("primary_lang", "")
+                repo = extra.get("full_name", "")
+                if lang:
+                    parts.append(f"[{lang}]")
+                if repo:
+                    parts.append(repo)
+            elif platform_id in ("netease-music", "qq-music"):
+                artist = extra.get("artist_names", "")
+                dur    = extra.get("duration_text", "")
+                if artist:
+                    parts.append(artist)
+                if dur:
+                    parts.append(dur)
+            elif platform_id == "weread":
+                author = extra.get("author", "")
+                if author:
+                    parts.append(author)
+
+            url = item.get("url", "")
+            line = "  ".join(parts)
+            if url:
+                line += f"\n    {url}"
+            lines.append(line)
+
+        return "\n".join(lines)
+
+
 # ── 注册入口 ─────────────────────────────────────────────────────────────────
 
 ALL_TOOL_CLASSES = [
@@ -349,6 +430,7 @@ ALL_TOOL_CLASSES = [
     WhoisTool, IcpTool, TrackingTool, HolidayTool,
     GithubTool, SteamTool, BiliTool,
     AnswerBookTool, HitokotoTool, EpicTool, RandomStrTool,
+    HotBoardTool,
 ]
 
 
