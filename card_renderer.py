@@ -51,20 +51,16 @@ def render_card(title: str, icon: str, fields: list[tuple[str, str]], accent_col
     <html>
     <head>
         <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="viewport" content="width=700">
         <style>
             * {{ box-sizing: border-box; margin: 0; padding: 0; }}
             
-            /* 核心修复：全白背景消除画布割裂感 */
-            html, body {{ background: #FFFFFF; }}
+            html {{ background: #FFFFFF; display: table; width: 100%; }}
 
             body {{ 
-                min-width: 100vw;
-                display: flex;
-                justify-content: center;
-                align-items: flex-start;
+                display: table-cell;
+                width: 700px;
                 font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", sans-serif; 
-                padding: 45px;
                 text-align: center;
             }}
             
@@ -72,7 +68,6 @@ def render_card(title: str, icon: str, fields: list[tuple[str, str]], accent_col
                 width: 700px;
                 background: #FFFFFF;
                 border-radius: 45px;
-                /* 关键修复：加深阴影使白底上的白卡片具有立体感 */
                 box-shadow: 0 20px 60px rgba(0,0,0,0.08), 0 5px 15px rgba(0,0,0,0.04);
                 overflow: hidden;
                 border: 1px solid rgba(0,0,0,0.05);
