@@ -1,6 +1,6 @@
 """
 UApiPro 工具箱插件 - 核心调度器
-功能：一言、天气、IP查询、MC查询、万年历、随机图片、定时新闻、随机字符串、MC玩家查询、Epic免费游戏、必应壁纸。
+功能：一言、天气、IP查询、MC查询、万年历、随机图片、定时新闻、随机字符串、MC玩家查询、Epic免费游戏、必应壁纸、全网热榜。
 """
 
 import re
@@ -380,6 +380,132 @@ class UApiProPlugin(Star):
         ):
             yield r
 
+    @filter.command("u 热榜", desc="全网热榜聚合")
+    async def cmd_hotboard(self, event: AstrMessageEvent):
+        from .hotboard import fetch
+
+        arg = self._extract_arg(event, r"u\s+热榜")
+        event.should_call_llm(False)
+
+        if not arg:
+            from .hotboard.fetcher import HELP_TEXT
+            yield event.plain_result(HELP_TEXT)
+            return
+
+        in_cd, remain = await self._check_cd(event)
+        if in_cd:
+            yield event.plain_result(f"⏰ 冷却中: 还剩 {remain} 秒")
+            return
+
+        try:
+            ok, payload, err = await fetch(
+                arg, self.plugin_config.get("uapi_token", ""), session=self.session
+            )
+        except Exception as e:
+            logger.error(f"[UApiPro] hotboard 执行异常: {e}")
+            yield event.plain_result("❌ 插件内部执行异常")
+            return
+
+        if not ok:
+            yield event.plain_result(err or "❌ 请求失败，请稍后再试。")
+            return
+
+        html         = payload["html"]
+        items        = payload["items"]
+        display_name = payload["display_name"]
+        platform_id  = payload["platform_id"]
+
+        # 文本降级函数：用结构化数据拼文本，不依赖 HTML 解析
+        def _hotboard_fallback() -> str:
+            EMOJI = {
+                "bilibili":      "📺",
+                "acfun":         "🍌",
+                "hellogithub":   "🐙",
+                "netease-music": "🎵",
+                "qq-music":      "🎶",
+                "weread":        "📖",
+            }
+            icon = EMOJI.get(platform_id, "📊")
+            lines = [f"{icon} {display_name}", "━━━━━━━━━━━━━━"]
+            for item in items:
+                rank  = item["index"]
+                title = item["title"]
+                hot   = item.get("hot_value", "")
+                extra = item.get("extra", {})
+
+                # 副信息
+                sub = ""
+                if platform_id == "bilibili":
+                    up = extra.get("up_name", "")
+                    sub = f"  UP: {up}" if up else ""
+                elif platform_id == "hellogithub":
+                    lang = extra.get("primary_lang", "")
+                    repo = extra.get("full_name", "")
+                    sub = f"  [{lang}] {repo}" if lang else f"  {repo}"
+                elif platform_id in ("netease-music", "qq-music"):
+                    artist = extra.get("artist_names", "")
+                    dur    = extra.get("duration_text", "")
+                    sub = f"  {artist}" + (f" · {dur}" if dur else "")
+                elif platform_id == "weread":
+                    author = extra.get("author", "")
+                    sub = f"  {author}" if author else ""
+
+                hot_str = f"  {hot}" if hot else ""
+                lines.append(f"#{rank} {title}{hot_str}")
+                if sub:
+                    lines.append(sub)
+                url = item.get("url", "")
+                if url:
+                    lines.append(f"  🔗 {url}")
+
+            lines.append("━━━━━━━━━━━━━━")
+            lines.append("Powered by UApiPro")
+            return "\n".join(lines)
+
+        # 文本模式直接降级
+        if self.plugin_config.get("uapi_text_mode", False):
+            yield event.plain_result(_hotboard_fallback())
+            return
+
+        # 尝试渲染，失败则降级文本
+        import base64 as _base64
+        render_strategies = [
+            {"full_page": True, "type": "png",  "scale": "device", "device_scale_factor_level": "ultra"},
+            {"full_page": True, "type": "jpeg", "quality": 100, "scale": "device", "device_scale_factor_level": "ultra"},
+            {"full_page": True, "type": "jpeg", "quality": 95,  "scale": "device", "device_scale_factor_level": "high"},
+            {"full_page": True, "type": "jpeg", "quality": 80,  "scale": "device"},
+        ]
+
+        async with self.render_lock:
+            for options in render_strategies:
+                try:
+                    image_data = await self.html_render(html, {}, False, options)
+                    if not image_data:
+                        continue
+                    raw = None
+                    if isinstance(image_data, bytes):
+                        raw = image_data
+                    elif isinstance(image_data, str) and os.path.exists(image_data):
+                        with open(image_data, "rb") as f:
+                            raw = f.read()
+                        with contextlib.suppress(OSError):
+                            os.remove(image_data)
+                    if not raw:
+                        continue
+                    if raw[:2] == b"\xff\xd8" or raw[:4] == b"\x89PNG":
+                        b64 = _base64.b64encode(raw).decode()
+                        yield event.chain_result(
+                            [Image(file=f"base64://{b64}"), Plain(f"\n✨ {display_name}")]
+                        )
+                        return
+                    logger.warning(f"[UApiPro] hotboard 策略 {options} 返回非图片数据")
+                except Exception as e:
+                    logger.warning(f"[UApiPro] hotboard 策略 {options} 失败: {e}")
+
+        yield event.plain_result(
+            "⚠️ 渲染服务器故障，已自动切换至文本模式：\n\n" + _hotboard_fallback()
+        )
+
     @filter.command("u 帮助", desc="查看所有指令")
     async def cmd_help(self, event: AstrMessageEvent):
         msg = (
@@ -395,6 +521,7 @@ class UApiProPlugin(Star):
             "🎁 /u epic\n"
             "🖼️ /u 必应 [日期]\n"
             "📖 /u 答案之书 <问题>\n"
+            "📊 /u 热榜 <平台>      发送 /u 热榜 查看支持平台\n"
             " /u 二维码 <内容> [尺寸]\n"
             " /u whois <域名>\n"
             " /u icp <域名>\n"
