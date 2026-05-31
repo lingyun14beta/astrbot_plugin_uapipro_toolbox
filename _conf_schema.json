@@ -18,7 +18,7 @@
         "default": false
     },
     "uapi_text_mode": {
-        "description": "纯文本回复模式",
+        "description": "文本优先模式",
         "hint": "开启后，机器人将只发送文字结果，不发送图片",
         "type": "bool",
         "default": false
