@@ -6,7 +6,6 @@ UApiPro LLM 工具模块
     register_llm_tools(self)
 """
 
-from dataclasses import field
 from pydantic import Field
 from pydantic.dataclasses import dataclass
 
@@ -21,6 +20,10 @@ _plugin_instance = None
 
 def _token() -> str:
     return _plugin_instance.plugin_config.get("uapi_token", "")
+
+
+def _ocr_settings() -> dict:
+    return _plugin_instance.plugin_config.get("ocr_settings", {})
 
 
 def _session():
@@ -423,6 +426,34 @@ class HotBoardTool(FunctionTool[AstrAgentContext]):
         return "\n".join(lines)
 
 
+@dataclass
+class OcrTool(FunctionTool[AstrAgentContext]):
+    name: str = "uapi_ocr"
+    description: str = "逐字提取当前图片中的文字内容，返回精确文字而非图片描述。"
+    parameters: dict = Field(default_factory=lambda: {
+        "type": "object",
+        "properties": {},
+        "required": []
+    })
+
+    async def call(self, context: ContextWrapper[AstrAgentContext], **kwargs) -> ToolExecResult:
+        from .apis import ocr
+        from .main import _extract_first_image_b64
+
+        event = context.context.event
+        ok, b64, err = await _extract_first_image_b64(event)
+        if not ok:
+            return err
+
+        settings = _ocr_settings()
+        return await _call_api(ocr.fetch(
+            b64, _token(),
+            return_markdown=settings.get("return_markdown", False),
+            enable_cls=settings.get("enable_cls", True),
+            session=_session(),
+        ))
+
+
 # ── 注册入口 ─────────────────────────────────────────────────────────────────
 
 ALL_TOOL_CLASSES = [
@@ -430,7 +461,7 @@ ALL_TOOL_CLASSES = [
     WhoisTool, IcpTool, TrackingTool, HolidayTool,
     GithubTool, SteamTool, BiliTool,
     AnswerBookTool, HitokotoTool, EpicTool, RandomStrTool,
-    HotBoardTool,
+    HotBoardTool, OcrTool,
 ]
 
 

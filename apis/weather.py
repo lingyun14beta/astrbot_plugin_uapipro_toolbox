@@ -1,11 +1,9 @@
 import aiohttp
-from astrbot.api import logger
 from ..card_renderer import render_card
 
 API_URL = "https://uapis.cn/api/v1/misc/weather"
 
 async def fetch(city: str, token: str, session: aiohttp.ClientSession = None):
-    logger.debug(f"[UApiPro] Weather Query: city={city} token={token}")
     params = {"token": token, "city": city, "extended": "true", "indices": "true", "forecast": "true", "minutely": "true", "lang": "zh"}
     headers = {"User-Agent": "AstrBot_UApiPro", "Token": token, "Authorization": f"Bearer {token}"}
 
