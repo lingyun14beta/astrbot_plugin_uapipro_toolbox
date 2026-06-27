@@ -41,7 +41,7 @@ async def fetch(arg_str: str, token: str, session: aiohttp.ClientSession = None)
         return False, "", "❌ 内容过长，请限制在 500 字符以内。"
 
     if size < 256 or size > 2048:
-        return False, "", f"❌ 请求参数错误：尺寸需在 256 到 2048 之间。"
+        return False, "", "❌ 请求参数错误：尺寸需在 256 到 2048 之间。"
 
     params = {"text": text, "size": size, "format": "image"}
     local_session = False
