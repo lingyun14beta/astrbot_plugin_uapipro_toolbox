@@ -3,6 +3,7 @@ hotboard/fetcher.py — 热榜请求调度器
 负责发起 HTTP 请求、处理错误码、将原始 JSON 交给对应平台解析器处理。
 """
 
+import asyncio
 import aiohttp
 from astrbot.api import logger
 
@@ -97,7 +98,7 @@ async def fetch(alias: str, token: str, session: aiohttp.ClientSession = None):
                 return False, None, "❌ 暂时无法获取该平台数据，请稍后再试"
             return False, None, f"❌ 接口响应异常 (HTTP {resp.status})"
 
-    except aiohttp.ClientTimeout:
+    except (asyncio.TimeoutError, aiohttp.ServerTimeoutError):
         return False, None, "⚠️ 请求超时，请稍后再试"
     except Exception as e:
         logger.error(f"[UApiPro] hotboard fetch 异常: {e}")
