@@ -295,7 +295,8 @@ class AnswerBookTool(FunctionTool[AstrAgentContext]):
 # ── 无参数工具 ───────────────────────────────────────────────────────────────
 
 @dataclass
-class HitokotoTool(FunctionTool[AstrAgentContext]):
+class HitokotoSimpleTool(FunctionTool[AstrAgentContext]):
+    """基础版一言工具"""
     name: str = "uapi_hitokoto"
     description: str = "获取一条随机的一言语录，内容涵盖诗词、动漫台词或名人名言。"
     parameters: dict = Field(default_factory=lambda: {
@@ -307,6 +308,79 @@ class HitokotoTool(FunctionTool[AstrAgentContext]):
     async def call(self, context: ContextWrapper[AstrAgentContext], **kwargs) -> ToolExecResult:
         from .apis import hitokoto
         return await _call_api(hitokoto.fetch(_token(), session=_session()))
+
+
+@dataclass
+class HitokotoAdvancedTool(FunctionTool[AstrAgentContext]):
+    """高级版一言工具：管理员已开启「高级一言」时注册，开放 mode/scene/source/category/tag 供 LLM 自主选择。"""
+    name: str = "uapi_hitokoto"
+    description: str = "获取一言语录，可按模式/场景/来源/分类/标签筛选；不确定时全部留空即可。"
+    parameters: dict = Field(default_factory=lambda: {
+        "type": "object",
+        "properties": {
+            "mode": {
+                "type": "string",
+                "enum": ["random", "daily", "recommend", "moment"],
+                "description": "运行模式，recommend 需配合 scene 使用，默认 random。"
+            },
+            "scene": {
+                "type": "string",
+                "enum": [
+                    "dawn", "morning", "noon", "afternoon", "evening", "night",
+                    "deep-night", "work", "coding", "meeting", "relax", "emo", "philosophy"
+                ],
+                "description": "推荐场景，按对话语境选择，传此参数即视为 mode=recommend。"
+            },
+            "source": {
+                "type": "string",
+                "enum": ["caoxingyu", "english-historical-quotes", "quotable", "sentences-bundle"],
+                "description": "语料来源，需要英文名言时选 english-historical-quotes 或 quotable。"
+            },
+            "category": {
+                "type": "string",
+                "enum": [
+                    "诗词", "古诗文", "文学", "哲学", "影视", "动画",
+                    "漫画", "游戏", "网络", "网易云", "抖机灵", "原创", "其他"
+                ],
+                "description": "语录分类。"
+            },
+            "tag": {
+                "type": "string",
+                "description": "语录标签（如 励志、治愈、爱情），用中文自由填写。"
+            }
+        },
+        "required": []
+    })
+
+    async def call(self, context: ContextWrapper[AstrAgentContext], **kwargs) -> ToolExecResult:
+        from .apis import hitokoto
+
+        base_settings = _plugin_instance.plugin_config.get("hitokoto_advanced", {})
+        settings = dict(base_settings)
+
+        mode = kwargs.get("mode", "").strip()
+        if mode:
+            settings["mode"] = mode
+
+        scene = kwargs.get("scene", "").strip()
+        if scene:
+            settings["scene"] = scene
+            if not mode:
+                settings["mode"] = "recommend"
+
+        source = kwargs.get("source", "").strip()
+        if source:
+            settings["source"] = [source]
+
+        category = kwargs.get("category", "").strip()
+        if category:
+            settings["category"] = [category]
+
+        tag = kwargs.get("tag", "").strip()
+        if tag:
+            settings["tag"] = [tag]
+
+        return await _call_api(hitokoto.fetch_advanced(_token(), settings, session=_session()))
 
 
 @dataclass
@@ -460,18 +534,32 @@ ALL_TOOL_CLASSES = [
     WeatherTool, IpQueryTool, McServerTool, McUserTool,
     WhoisTool, IcpTool, TrackingTool, HolidayTool,
     GithubTool, SteamTool, BiliTool,
-    AnswerBookTool, HitokotoTool, EpicTool, RandomStrTool,
+    AnswerBookTool, EpicTool, RandomStrTool,
     HotBoardTool, OcrTool,
 ]
 
 
 def register_llm_tools(plugin_instance):
-    """在插件 __init__ 末尾调用此函数，完成所有 LLM 工具注册。"""
+    """在插件 __init__ 末尾调用此函数，完成所有 LLM 工具注册。
+
+    一言工具按面板「启用高级一言」开关动态二选一注册：
+    开关开启时注册 HitokotoAdvancedTool（mode/scene/source/category/tag 全部交给 LLM 自主选择），
+    关闭时注册 HitokotoSimpleTool（零参数，行为与旧版本一致）。
+    AstrBot 保存插件配置时会自动热重载插件（重新执行 __init__），
+    因此切换开关并保存后，LLM 看到的工具 schema 会自动同步，无需手动重载。
+    """
     global _plugin_instance
     _plugin_instance = plugin_instance
-    tools = [cls() for cls in ALL_TOOL_CLASSES]
+
+    adv_enabled = plugin_instance.plugin_config.get("hitokoto_advanced", {}).get("enabled", False)
+    hitokoto_cls = HitokotoAdvancedTool if adv_enabled else HitokotoSimpleTool
+
+    tools = [cls() for cls in ALL_TOOL_CLASSES] + [hitokoto_cls()]
     try:
         plugin_instance.context.add_llm_tools(*tools)
-        logger.info(f"[UApiPro] 已注册 {len(tools)} 个 LLM 工具")
+        logger.info(
+            f"[UApiPro] 已注册 {len(tools)} 个 LLM 工具"
+            f"（一言工具：{'高级版' if adv_enabled else '基础版'}）"
+        )
     except Exception as e:
         logger.error(f"[UApiPro] LLM 工具注册失败: {e}")
