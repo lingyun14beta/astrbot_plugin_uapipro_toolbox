@@ -207,13 +207,15 @@ class UApiProPlugin(Star):
     async def cmd_hitokoto(self, event: AstrMessageEvent):
         from .apis import hitokoto
 
-        async for r in self._relay(
-            event,
-            hitokoto.fetch(
-                self.plugin_config.get("uapi_token", ""), session=self.session
-            ),
-            "今日一言",
-        ):
+        token = self.plugin_config.get("uapi_token", "")
+        adv = self.plugin_config.get("hitokoto_advanced", {})
+
+        if adv.get("enabled", False):
+            api_coro = hitokoto.fetch_advanced(token, adv, session=self.session)
+        else:
+            api_coro = hitokoto.fetch(token, session=self.session)
+
+        async for r in self._relay(event, api_coro, "今日一言"):
             yield r
 
     @filter.command("u 随机图片", desc="随机壁纸")

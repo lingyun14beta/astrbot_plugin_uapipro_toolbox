@@ -4,7 +4,6 @@ hotboard/renderer.py — 热榜 HTML 渲染器
 """
 
 import os
-import re
 import html
 import base64
 from datetime import datetime, timezone

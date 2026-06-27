@@ -1,6 +1,7 @@
 import aiohttp
 import base64
 import re
+import contextlib
 from datetime import datetime
 from astrbot.api import logger
 from ..card_renderer import render_card
@@ -42,7 +43,7 @@ async def fetch(arg_str: str, token: str, session: aiohttp.ClientSession = None)
         async with session.get(USER_URL, params={"uid": mid}, timeout=10) as u_resp:
             u_data = await u_resp.json(content_type=None) if u_resp.status == 200 else {}
             if u_resp.status == 404:
-                return False, "", f"❌ 找不到该用户：请检查 UID 是否正确。"
+                return False, "", "❌ 找不到该用户：请检查 UID 是否正确。"
             elif u_resp.status != 200:
                 return False, "", f"❌ 用户接口异常 (HTTP {u_resp.status})"
 
@@ -52,13 +53,12 @@ async def fetch(arg_str: str, token: str, session: aiohttp.ClientSession = None)
         # 处理头像 Base64
         display_face = ""
         if face_url and re.match(r"^https?://([^/]*\.hdslb\.com)/", face_url):
-            try:
+            with contextlib.suppress(Exception):
                 async with session.get(face_url, timeout=3) as img_resp:
                     if img_resp.status == 200:
                         img_data = await img_resp.read()
                         display_face = f"data:image/jpeg;base64,{base64.b64encode(img_data).decode()}"
                         del img_data
-            except Exception: pass
 
         # 2. 获取投稿列表 (archives 接口)
         v1_info, v1_cover, v2_info = "暂无投稿", "", "暂无更多投稿"
@@ -76,13 +76,12 @@ async def fetch(arg_str: str, token: str, session: aiohttp.ClientSession = None)
                     # 抓取视频 1 的封面
                     c_url = v1.get("cover")
                     if c_url and re.match(r"^https?://([^/]*\.hdslb\.com)/", c_url):
-                        try:
+                        with contextlib.suppress(Exception):
                             async with session.get(c_url, timeout=4) as c_resp:
                                 if c_resp.status == 200:
                                     c_data = await c_resp.read()
                                     v1_cover = f"data:image/jpeg;base64,{base64.b64encode(c_data).decode()}"
                                     del c_data
-                        except Exception: pass
 
                     # 视频 2 (精简)
                     if len(videos) > 1:

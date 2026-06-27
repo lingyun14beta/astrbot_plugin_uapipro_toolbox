@@ -68,7 +68,7 @@ async def fetch(arg_str: str, token: str, session: aiohttp.ClientSession = None)
             if resp.status == 400:
                 return False, "", f"❌ 请求参数无效: {api_msg}\n\n{usage_hint}"
             elif resp.status == 404:
-                return False, "", f"❌ 未查询到备案信息: 该域名可能未备案或输入有误。"
+                return False, "", "❌ 未查询到备案信息: 该域名可能未备案或输入有误。"
             
             return False, "", f"❌ 接口请求失败 (HTTP {resp.status}): {api_msg}"
 
