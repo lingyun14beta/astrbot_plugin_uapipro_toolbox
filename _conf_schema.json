@@ -73,5 +73,24 @@
         "hint": "每行输入一个 QQ 号，按回车键添加",
         "type": "list",
         "default": []
+    },
+    "ocr_settings": {
+        "description": "OCR 识图设置",
+        "hint": "配置 /u ocr 指令及 LLM 工具调用时的文字识别选项。",
+        "type": "object",
+        "items": {
+            "return_markdown": {
+                "description": "返回 Markdown 格式",
+                "hint": "开启后额外整理出 Markdown 文本，适合票据、表格类图片。",
+                "type": "bool",
+                "default": false
+            },
+            "enable_cls": {
+                "description": "启用方向校正",
+                "hint": "开启后自动校正手机拍摄导致的旋转或倾斜，可提升识别准确率。",
+                "type": "bool",
+                "default": true
+            }
+        }
     }
 }
