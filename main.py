@@ -15,7 +15,38 @@ import aiohttp
 from astrbot.api.event import filter, AstrMessageEvent
 from astrbot.api.star import Context, Star
 from astrbot.api import logger
-from astrbot.api.message_components import Image, Plain
+from astrbot.api.message_components import Image, Plain, Reply, Node
+
+OCR_MAX_IMAGE_BYTES = 10 * 1024 * 1024
+
+
+async def _extract_first_image_b64(event: AstrMessageEvent) -> tuple[bool, str, str]:
+    """提取消息中第一张图片并转为 Base64，优先取直接发送的图，没有则取引用回复的图。"""
+    direct_images: list[Image] = []
+    quoted_images: list[Image] = []
+    for comp in event.get_messages():
+        if isinstance(comp, Image):
+            direct_images.append(comp)
+        elif isinstance(comp, Reply) and comp.chain:
+            for sub in comp.chain:
+                if isinstance(sub, Image):
+                    quoted_images.append(sub)
+
+    candidates = direct_images or quoted_images
+
+    if not candidates:
+        return False, "", "❓ 未检测到图片，请直接发图或引用一张图片后发送 /u ocr"
+
+    try:
+        b64 = await candidates[0].convert_to_base64()
+    except Exception as e:
+        logger.warning(f"[UApiPro] OCR 图片读取失败: {e}")
+        return False, "", "❌ 图片读取失败，请重新发送。"
+
+    if len(b64) > OCR_MAX_IMAGE_BYTES // 3 * 4:
+        return False, "", "❌ 图片过大，请发送不超过 10MB 的图片。"
+
+    return True, b64, ""
 
 
 class UApiProPlugin(Star):
@@ -369,6 +400,53 @@ class UApiProPlugin(Star):
         ):
             yield r
 
+    @filter.command("u ocr", desc="图片文字识别")
+    async def cmd_ocr(self, event: AstrMessageEvent):
+        event.should_call_llm(False)
+        in_cd, remain = await self._check_cd(event)
+        if in_cd:
+            yield event.plain_result(f"⏰ 冷却中: 还剩 {remain} 秒")
+            return
+
+        ok, b64, err = await _extract_first_image_b64(event)
+        if not ok:
+            yield event.plain_result(err)
+            return
+
+        from .apis import ocr
+
+        ocr_settings = self.plugin_config.get("ocr_settings", {})
+        try:
+            ok, text, err = await ocr.fetch(
+                b64,
+                self.plugin_config.get("uapi_token", ""),
+                return_markdown=ocr_settings.get("return_markdown", False),
+                enable_cls=ocr_settings.get("enable_cls", True),
+                session=self.session,
+            )
+        except Exception as e:
+            logger.error(f"[UApiPro] OCR 执行异常: {e}")
+            yield event.plain_result("❌ 插件内部执行异常")
+            return
+
+        if not ok:
+            yield event.plain_result(err or "❌ 识别失败，请稍后再试。")
+            return
+
+        result_msg = f"📝 OCR 识别结果\n━━━━━━━━━━━━━━\n{text}"
+
+        # QQ 平台用合并转发，其他平台直接发文本
+        if event.get_platform_name() == "aiocqhttp":
+            try:
+                yield event.chain_result(
+                    [Node(content=[Plain(text=result_msg)], name="OCR 识别结果", uin="10000")]
+                )
+                return
+            except Exception as e:
+                logger.warning(f"[UApiPro] 合并转发发送失败，降级为普通文本: {e}")
+
+        yield event.plain_result(result_msg)
+
     @filter.command("u 新闻", desc="每日新闻早报")
     async def cmd_news(self, event: AstrMessageEvent):
         from .apis import news
@@ -531,6 +609,7 @@ class UApiProPlugin(Star):
             " /u bili <UID> [关键词]\n"
             " /u 新闻\n"
             " /u 随机图片\n"
+            " /u ocr 发图或引用图片识别文字\n"
             "━━━━━━━━━━━━━━\n"
             "💡 提示：[] 为可选，<> 为必填"
         )
