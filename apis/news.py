@@ -1,7 +1,6 @@
 import aiohttp
 import tempfile
 import os
-import asyncio
 
 API_URL = "https://uapis.cn/api/v1/daily/news-image"
 
