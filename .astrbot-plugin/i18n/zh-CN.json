@@ -1,0 +1,90 @@
+{
+  "metadata": {
+    "display_name": "UApiPro 工具箱",
+    "desc": "调用 UApiPro 提供的免费 API，支持一言、天气、IP 查询，卡片图片返回。"
+  },
+  "config": {
+    "uapi_token": {
+      "description": "接口密钥 (Token)",
+      "hint": "请前往 uapis.cn 获取您的 API Token"
+    },
+    "uapi_cd": {
+      "description": "指令冷却时间 (秒)",
+      "hint": "两次指令触发之间的最小间隔时间（建议 5 秒）"
+    },
+    "llm_tools_enabled": {
+      "description": "允许 LLM 自动调用工具",
+      "hint": "开启后 LLM 可根据对话内容自动调用查询工具；关闭后只能通过 /u 指令手动触发"
+    },
+    "uapi_text_mode": {
+      "description": "文本优先模式",
+      "hint": "开启后，机器人将只发送文字结果，不发送图片"
+    },
+    "random_img_categories": {
+      "description": "随机图片图库范围",
+      "hint": "点击并勾选你想要包含的分类",
+      "labels": ["ACG", "风景", "动漫", "电脑壁纸", "手机壁纸", "番剧", "AI 绘画", "表情包", "福瑞"]
+    },
+    "news_schedule_enabled": {
+      "description": "启用每日新闻推送",
+      "hint": "是否开启每天固定时间的定时新闻任务"
+    },
+    "news_schedule_time": {
+      "description": "新闻推送的具体时间",
+      "hint": "格式为 HH:MM，例如 08:30"
+    },
+    "news_groups": {
+      "description": "接收新闻的群号列表",
+      "hint": "每行输入一个群号，按回车键添加"
+    },
+    "news_users": {
+      "description": "接收新闻的 QQ 号列表",
+      "hint": "每行输入一个 QQ 号，按回车键添加"
+    },
+    "ocr_settings": {
+      "description": "OCR 识图设置",
+      "hint": "配置 /u ocr 指令及 LLM 工具调用时的文字识别选项。",
+      "return_markdown": {
+        "description": "返回 Markdown 格式",
+        "hint": "开启后额外整理出 Markdown 文本，适合票据、表格类图片。"
+      },
+      "enable_cls": {
+        "description": "启用方向校正",
+        "hint": "开启后自动校正手机拍摄导致的旋转或倾斜，可提升识别准确率。"
+      }
+    },
+    "hitokoto_advanced": {
+      "description": "高级一言设置",
+      "hint": "配置 /u 一言 指令及 LLM 工具调用时使用的高级模式（场景推荐/每日一言/来源与标签过滤）。",
+      "enabled": {
+        "description": "启用高级一言",
+        "hint": "开启后 /u 一言 将按下方配置的模式与筛选条件请求语录；关闭则使用基础随机一言接口。"
+      },
+      "mode": {
+        "description": "运行模式",
+        "hint": "random 随机一言；daily 每日固定一言（适合签到打卡）；recommend 按场景推荐（需选择场景）；moment 按当前时段自动适配。",
+        "labels": ["随机", "每日", "场景推荐", "时刻"]
+      },
+      "scene": {
+        "description": "推荐场景",
+        "hint": "仅当运行模式为 recommend 时生效，其余模式下会被忽略。",
+        "labels": ["黎明", "早晨", "中午", "下午", "傍晚", "夜晚", "深夜", "工作", "编程", "会议", "放松", "emo", "哲学"]
+      },
+      "source": {
+        "description": "语料来源过滤",
+        "hint": "限定语录的来源语料库；不选则不限制来源。",
+        "labels": ["曹星宇", "英文历史名言", "Quotable", "Sentences Bundle"]
+      },
+      "category": {
+        "description": "分类过滤",
+        "hint": "限定语录所属分类，可多选；不选则不限制分类。",
+        "labels": ["诗词", "古诗文", "文学", "哲学", "影视", "动画", "漫画", "游戏", "网络", "网易云", "抖机灵", "原创", "其他"]
+      },
+      "tag": {
+        "description": "标签过滤",
+        "hint": "限定语录命中的标签，可多选；不选则不限制标签。",
+        "labels": ["emo", "上午", "下午", "人生", "会议", "傍晚", "励志", "午间", "历史", "友情", "哲学", "坚定", "夜晚", "工作", "希望", "幽默", "怀旧", "成长", "技术", "放松", "时间", "死亡", "治愈", "浪漫", "深夜", "清晨", "清醒", "温柔", "热血", "爱情", "独处", "现实", "理想", "相思", "真理", "禅意", "离别", "自由", "轻松", "释然", "锋利"]
+      }
+    }
+  }
+}
