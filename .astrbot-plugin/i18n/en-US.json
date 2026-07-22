@@ -1,0 +1,90 @@
+{
+  "metadata": {
+    "display_name": "UApiPro Toolbox",
+    "desc": "Call free APIs from UApiPro, supporting hitokoto, weather, IP lookup with card-style image responses."
+  },
+  "config": {
+    "uapi_token": {
+      "description": "API Key (Token)",
+      "hint": "Get your API token from uapis.cn"
+    },
+    "uapi_cd": {
+      "description": "Command Cooldown (s)",
+      "hint": "Minimum interval between two command triggers (5 s recommended)"
+    },
+    "llm_tools_enabled": {
+      "description": "Allow LLM to Auto-Invoke Tools",
+      "hint": "When enabled, the LLM can call query tools based on conversation context; when disabled, only manual /u commands work"
+    },
+    "uapi_text_mode": {
+      "description": "Text-Only Mode",
+      "hint": "When enabled, the bot will only send text results instead of images"
+    },
+    "random_img_categories": {
+      "description": "Random Image Categories",
+      "hint": "Select the categories you want to include",
+      "labels": ["ACG", "Landscape", "Anime", "PC Wallpaper", "Mobile Wallpaper", "General Anime", "AI Art", "Stickers", "Furry"]
+    },
+    "news_schedule_enabled": {
+      "description": "Enable Daily News Push",
+      "hint": "Enable scheduled daily news delivery at a fixed time"
+    },
+    "news_schedule_time": {
+      "description": "News Push Time",
+      "hint": "Format: HH:MM, e.g. 08:30"
+    },
+    "news_groups": {
+      "description": "Group ID List for News",
+      "hint": "Enter one group ID per line, press Enter to add"
+    },
+    "news_users": {
+      "description": "User ID List for News",
+      "hint": "Enter one QQ ID per line, press Enter to add"
+    },
+    "ocr_settings": {
+      "description": "OCR Settings",
+      "hint": "Configure text recognition options for /u ocr command and LLM tool calls.",
+      "return_markdown": {
+        "description": "Return Markdown Format",
+        "hint": "When enabled, additionally format output as Markdown, suitable for receipts and table-like images."
+      },
+      "enable_cls": {
+        "description": "Enable Orientation Correction",
+        "hint": "When enabled, automatically correct rotation or skew from phone photos to improve recognition accuracy."
+      }
+    },
+    "hitokoto_advanced": {
+      "description": "Advanced Hitokoto Settings",
+      "hint": "Configure advanced mode for /u hitokoto command and LLM tools (scene recommendation / daily quote / source & tag filters).",
+      "enabled": {
+        "description": "Enable Advanced Hitokoto",
+        "hint": "When enabled, /u hitokoto uses the mode and filters below; when disabled, the basic random endpoint is used."
+      },
+      "mode": {
+        "description": "Mode",
+        "hint": "random: random quote; daily: fixed daily quote (great for check-in); recommend: scene-based recommendation (requires scene selection); moment: auto-adapt to time of day.",
+        "labels": ["Random", "Daily", "Recommend", "Moment"]
+      },
+      "scene": {
+        "description": "Recommended Scene",
+        "hint": "Only effective when mode is 'recommend'; ignored in other modes.",
+        "labels": ["Dawn", "Morning", "Noon", "Afternoon", "Evening", "Night", "Deep Night", "Work", "Coding", "Meeting", "Relax", "Emo", "Philosophy"]
+      },
+      "source": {
+        "description": "Source Filter",
+        "hint": "Restrict quotes to specific source corpus; leave empty for no restriction.",
+        "labels": ["Cao Xingyu", "English Historical Quotes", "Quotable", "Sentences Bundle"]
+      },
+      "category": {
+        "description": "Category Filter",
+        "hint": "Restrict quotes to specific categories; multiple selections allowed; leave empty for no restriction.",
+        "labels": ["Poetry", "Classical Poetry", "Literature", "Philosophy", "Film & TV", "Anime", "Manga", "Gaming", "Internet", "NetEase Cloud", "Witty", "Original", "Other"]
+      },
+      "tag": {
+        "description": "Tag Filter",
+        "hint": "Restrict quotes to specific tags; multiple selections allowed; leave empty for no restriction.",
+        "labels": ["Emo", "Morning", "Afternoon", "Life", "Meeting", "Dusk", "Motivation", "Noon", "History", "Friendship", "Philosophy", "Determination", "Night", "Work", "Hope", "Humor", "Nostalgia", "Growth", "Tech", "Relax", "Time", "Death", "Healing", "Romance", "Late Night", "Dawn", "Sober", "Gentle", "Passion", "Love", "Solitude", "Reality", "Ideals", "Longing", "Truth", "Zen", "Farewell", "Freedom", "Easy", "Relief", "Sharp"]
+      }
+    }
+  }
+}
