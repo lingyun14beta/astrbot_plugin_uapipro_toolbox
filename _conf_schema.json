@@ -158,5 +158,49 @@
                 "default": []
             }
         }
+    },
+    "github_user_settings": {
+        "description": "GitHub 用户查询设置",
+        "hint": "配置 /u gh 指令及 LLM 工具调用时的查询参数。",
+        "type": "object",
+        "items": {
+            "activity": {
+                "description": "获取贡献活动数据",
+                "hint": "开启后返回近一年贡献统计（总贡献、提交/Issue/PR 明细、最活跃月份）。",
+                "type": "bool",
+                "default": true
+            },
+            "activity_scope": {
+                "description": "贡献活动范围",
+                "hint": "all 统计全部贡献；organization 仅统计下方组织名指定的组织贡献。",
+                "type": "string",
+                "options": ["all", "organization"],
+                "default": "all"
+            },
+            "org": {
+                "description": "组织登录名",
+                "hint": "填写组织名后自动按该组织统计贡献（视为 organization 范围）。留空则按上方范围统计。",
+                "type": "string",
+                "default": ""
+            },
+            "pinned": {
+                "description": "附带 Pinned 仓库",
+                "hint": "是否返回用户在主页展示的 pinned 仓库。",
+                "type": "bool",
+                "default": true
+            },
+            "repos": {
+                "description": "附带最近活跃仓库",
+                "hint": "是否返回用户最近活跃的公开仓库列表。",
+                "type": "bool",
+                "default": true
+            },
+            "repos_limit": {
+                "description": "仓库列表数量",
+                "hint": "返回最近活跃仓库的最大数量（1-100）。",
+                "type": "int",
+                "default": 5
+            }
+        }
     }
 }

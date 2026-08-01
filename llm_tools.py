@@ -233,6 +233,27 @@ class GithubTool(FunctionTool[AstrAgentContext]):
 
 
 @dataclass
+class GithubUserTool(FunctionTool[AstrAgentContext]):
+    name: str = "uapi_github_user"
+    description: str = "查询 GitHub 用户资料画像，包括关注者、公开仓库数、所属组织、年度贡献统计（提交/Issue/PR）以及 Pinned 和最近活跃仓库。"
+    parameters: dict = Field(default_factory=lambda: {
+        "type": "object",
+        "properties": {
+            "username": {"type": "string", "description": "GitHub 用户名或主页链接，例如：torvalds 或 https://github.com/torvalds"}
+        },
+        "required": ["username"]
+    })
+
+    async def call(self, context: ContextWrapper[AstrAgentContext], **kwargs) -> ToolExecResult:
+        from .apis import github_user
+        username = kwargs.get("username", "").strip()[:100]
+        if not username:
+            return "请提供 GitHub 用户名。"
+        cfg = _plugin_instance.plugin_config.get("github_user_settings", {})
+        return await _call_api(github_user.fetch(username, _token(), session=_session(), config=cfg))
+
+
+@dataclass
 class SteamTool(FunctionTool[AstrAgentContext]):
     name: str = "uapi_steam"
     description: str = "查询 Steam 用户资料，包括昵称、在线状态、勋章及头像。"
@@ -533,7 +554,7 @@ class OcrTool(FunctionTool[AstrAgentContext]):
 ALL_TOOL_CLASSES = [
     WeatherTool, IpQueryTool, McServerTool, McUserTool,
     WhoisTool, IcpTool, TrackingTool, HolidayTool,
-    GithubTool, SteamTool, BiliTool,
+    GithubTool, GithubUserTool, SteamTool, BiliTool,
     AnswerBookTool, EpicTool, RandomStrTool,
     HotBoardTool, OcrTool,
 ]

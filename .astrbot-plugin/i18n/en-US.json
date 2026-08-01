@@ -85,6 +85,35 @@
         "hint": "Restrict quotes to specific tags; multiple selections allowed; leave empty for no restriction.",
         "labels": ["Emo", "Morning", "Afternoon", "Life", "Meeting", "Dusk", "Motivation", "Noon", "History", "Friendship", "Philosophy", "Determination", "Night", "Work", "Hope", "Humor", "Nostalgia", "Growth", "Tech", "Relax", "Time", "Death", "Healing", "Romance", "Late Night", "Dawn", "Sober", "Gentle", "Passion", "Love", "Solitude", "Reality", "Ideals", "Longing", "Truth", "Zen", "Farewell", "Freedom", "Easy", "Relief", "Sharp"]
       }
+    },
+    "github_user_settings": {
+      "description": "GitHub User Query Settings",
+      "hint": "Configure query parameters for the /u gh command and LLM tool calls.",
+      "activity": {
+        "description": "Fetch Contribution Activity",
+        "hint": "When enabled, returns last-year contribution stats (total, commits/issues/PRs breakdown, top months)."
+      },
+      "activity_scope": {
+        "description": "Contribution Scope",
+        "hint": "all: all contributions; organization: only contributions for the organization below.",
+        "labels": ["All", "Organization"]
+      },
+      "org": {
+        "description": "Organization Login",
+        "hint": "When set, contributions are scoped to this organization (treated as organization scope). Leave empty to use the scope above."
+      },
+      "pinned": {
+        "description": "Include Pinned Repositories",
+        "hint": "Whether to return the pinned repositories shown on the user's profile."
+      },
+      "repos": {
+        "description": "Include Recently Active Repositories",
+        "hint": "Whether to return the user's recently active public repositories."
+      },
+      "repos_limit": {
+        "description": "Repository List Limit",
+        "hint": "Max number of recently active repositories to return (1-100)."
+      }
     }
   }
 }
