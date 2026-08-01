@@ -67,6 +67,7 @@ class UApiProPlugin(Star):
         "whois",
         "tracking",
         "github",
+        "github_user",
         "steam_user",
         "bili",
         "icp",
@@ -76,11 +77,11 @@ class UApiProPlugin(Star):
         super().__init__(context)
         self.plugin_config = config
 
-        headers = {
-            "User-Agent": "AstrBot_UApiPro",
-            "Token": config.get("uapi_token", ""),
-            "Authorization": f"Bearer {config.get('uapi_token', '')}",
-        }
+        token = config.get("uapi_token", "")
+        headers = {"User-Agent": "AstrBot_UApiPro"}
+        if token:
+            headers["Token"] = token
+            headers["Authorization"] = f"Bearer {token}"
         self.session = aiohttp.ClientSession(
             headers=headers, timeout=aiohttp.ClientTimeout(total=30)
         )
@@ -374,6 +375,13 @@ class UApiProPlugin(Star):
         ):
             yield r
 
+    @filter.command("u gh", desc="GitHub用户信息")
+    async def cmd_github_user(self, event: AstrMessageEvent):
+        async for r in self._handle_query(
+            event, "github_user", r"u\s+gh", "GitHub用户信息"
+        ):
+            yield r
+
     @filter.command("u steam", desc="Steam用户信息")
     async def cmd_steam(self, event: AstrMessageEvent):
         arg = self._extract_arg(event, r"u\s+steam")
@@ -607,6 +615,7 @@ class UApiProPlugin(Star):
             " /u icp <域名>\n"
             " /u 快递 <单号>\n"
             " /u github <仓库/链接>\n"
+            " /u gh <用户名/链接>       GitHub 用户画像\n"
             " /u steam <ID/链接>\n"
             " /u bili <UID> [关键词]\n"
             " /u 新闻\n"
