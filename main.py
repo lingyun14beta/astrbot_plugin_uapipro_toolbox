@@ -377,8 +377,18 @@ class UApiProPlugin(Star):
 
     @filter.command("u gh", desc="GitHub用户信息")
     async def cmd_github_user(self, event: AstrMessageEvent):
-        async for r in self._handle_query(
-            event, "github_user", r"u\s+gh", "GitHub用户信息"
+        arg = self._extract_arg(event, r"u\s+gh")
+        from .apis import github_user
+
+        async for r in self._relay(
+            event,
+            github_user.fetch(
+                arg,
+                self.plugin_config.get("uapi_token", ""),
+                session=self.session,
+                config=self.plugin_config.get("github_user_settings", {}),
+            ),
+            "GitHub用户信息",
         ):
             yield r
 

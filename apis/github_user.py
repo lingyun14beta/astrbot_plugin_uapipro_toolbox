@@ -132,7 +132,35 @@ async def _build_card(data: dict, session: aiohttp.ClientSession) -> str:
     return html
 
 
-async def fetch(arg_str: str, token: str, session: aiohttp.ClientSession = None):
+def _build_params(username: str, config: dict) -> dict:
+    cfg = config or {}
+    params = {"user": username}
+
+    if cfg.get("activity", True):
+        params["activity"] = "true"
+        org = str(cfg.get("org") or "").strip()
+        scope = str(cfg.get("activity_scope") or "all").strip()
+        if org:
+            params["org"] = org
+            params["activity_scope"] = "organization"
+        elif scope in ("all", "organization"):
+            params["activity_scope"] = scope
+
+    if cfg.get("pinned", True):
+        params["pinned"] = "true"
+
+    if cfg.get("repos", True):
+        params["repos"] = "true"
+        try:
+            limit = int(cfg.get("repos_limit", 5))
+        except (TypeError, ValueError):
+            limit = 5
+        params["repos_limit"] = max(1, min(100, limit))
+
+    return params
+
+
+async def fetch(arg_str: str, token: str, session: aiohttp.ClientSession = None, config: dict = None):
     """
     GitHub 用户信息查询模块
     """
@@ -157,13 +185,7 @@ async def fetch(arg_str: str, token: str, session: aiohttp.ClientSession = None)
         safe_name = username[:30]
         return False, "", f"❌ 用户名不合法：'{safe_name}' 不符合 GitHub 命名规范。\n\n{usage_hint}"
 
-    params = {
-        "user": username,
-        "activity": "true",
-        "pinned": "true",
-        "repos": "true",
-        "repos_limit": "5",
-    }
+    params = _build_params(username, config)
     local_session = False
     if session is None or not token:
         headers = {"User-Agent": "AstrBot_UApiPro"}

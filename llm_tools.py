@@ -249,7 +249,8 @@ class GithubUserTool(FunctionTool[AstrAgentContext]):
         username = kwargs.get("username", "").strip()[:100]
         if not username:
             return "请提供 GitHub 用户名。"
-        return await _call_api(github_user.fetch(username, _token(), session=_session()))
+        cfg = _plugin_instance.plugin_config.get("github_user_settings", {})
+        return await _call_api(github_user.fetch(username, _token(), session=_session(), config=cfg))
 
 
 @dataclass
