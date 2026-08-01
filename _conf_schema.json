@@ -198,7 +198,7 @@
             "repos_limit": {
                 "description": "仓库列表数量",
                 "hint": "返回最近活跃仓库的最大数量（1-100）。",
-                "type": "integer",
+                "type": "int",
                 "default": 5
             }
         }
