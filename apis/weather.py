@@ -4,8 +4,13 @@ from ..card_renderer import render_card
 API_URL = "https://uapis.cn/api/v1/misc/weather"
 
 async def fetch(city: str, token: str, session: aiohttp.ClientSession = None):
-    params = {"token": token, "city": city, "extended": "true", "indices": "true", "forecast": "true", "minutely": "true", "lang": "zh"}
-    headers = {"User-Agent": "AstrBot_UApiPro", "Token": token, "Authorization": f"Bearer {token}"}
+    params = {"city": city, "extended": "true", "indices": "true", "forecast": "true", "minutely": "true", "lang": "zh"}
+    if token:
+        params["token"] = token
+    headers = {"User-Agent": "AstrBot_UApiPro"}
+    if token:
+        headers["Token"] = token
+        headers["Authorization"] = f"Bearer {token}"
 
     local_session = False
     if session is None:

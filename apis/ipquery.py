@@ -6,8 +6,13 @@ API_URL = "https://uapis.cn/api/v1/network/ipinfo"
 async def fetch(ip: str, token: str, session: aiohttp.ClientSession = None):
     if not ip or len(ip.strip()) == 0: 
         return False, "", "❌ 请输入要查询的 IP 地址或域名。"
-    params = {"ip": ip, "token": token}
-    headers = {"User-Agent": "AstrBot_UApiPro", "Token": token, "Authorization": f"Bearer {token}"}
+    params = {"ip": ip}
+    if token:
+        params["token"] = token
+    headers = {"User-Agent": "AstrBot_UApiPro"}
+    if token:
+        headers["Token"] = token
+        headers["Authorization"] = f"Bearer {token}"
     
     local_session = False
     if session is None:

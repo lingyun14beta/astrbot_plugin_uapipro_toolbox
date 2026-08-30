@@ -5,7 +5,10 @@ import os
 API_URL = "https://uapis.cn/api/v1/random/image"
 
 async def fetch(category: str = None, img_type: str = None, token: str = "", session: aiohttp.ClientSession = None):
-    headers = {"User-Agent": "AstrBot_UApiPro", "Token": token, "Authorization": f"Bearer {token}"}
+    headers = {"User-Agent": "AstrBot_UApiPro"}
+    if token:
+        headers["Token"] = token
+        headers["Authorization"] = f"Bearer {token}"
     params = {k: v for k, v in {"category": category, "type": img_type, "token": token}.items() if v}
     
     local_session = False

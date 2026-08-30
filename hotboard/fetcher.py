@@ -53,11 +53,10 @@ async def fetch(alias: str, token: str, session: aiohttp.ClientSession = None):
 
     platform_id, parser, display_name = PLATFORM_MAP[alias]
     url = API_BASE
-    headers = {
-        "User-Agent": "AstrBot_UApiPro",
-        "Token": token,
-        "Authorization": f"Bearer {token}",
-    }
+    headers = {"User-Agent": "AstrBot_UApiPro"}
+    if token:
+        headers["Token"] = token
+        headers["Authorization"] = f"Bearer {token}"
 
     local_session = False
     if session is None:
