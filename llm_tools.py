@@ -13,6 +13,7 @@ from astrbot.core.agent.run_context import ContextWrapper
 from astrbot.core.agent.tool import FunctionTool, ToolExecResult
 from astrbot.core.astr_agent_context import AstrAgentContext
 from astrbot.api import logger
+from astrbot.api.event import MessageChain
 
 # 全局持有插件实例，注册时写入
 _plugin_instance = None
@@ -556,7 +557,7 @@ class OcrTool(FunctionTool[AstrAgentContext]):
         from .main import _extract_first_image_b64
 
         event = context.context.event
-        ok, b64, err = await _extract_first_image_b64(event)
+        ok, b64, err = await _extract_first_image_b64(event, "/u ocr")
         if not ok:
             return err
 
@@ -572,7 +573,7 @@ class OcrTool(FunctionTool[AstrAgentContext]):
 @dataclass
 class MattingTool(FunctionTool[AstrAgentContext]):
     name: str = "uapi_matting"
-    description: str = "对当前对话中的图片（含引用回复）进行抠图（背景移除）。可指定分割模型、输出形态（透明主体/灰度蒙版/纯色背景）、底色与输出格式；仅返回处理信息，结果图片请告知用户发送 /u 抠图 指令查看。注意：jpeg 格式仅支持 output=background 纯色背景模式。"
+    description: str = "对当前对话中的图片（含引用回复）进行抠图（背景移除），并自动将结果图片发送到当前会话。可指定分割模型、输出形态（透明主体/灰度蒙版/纯色背景）、底色与输出格式。注意：jpeg 格式仅支持 output=background 纯色背景模式。"
     parameters: dict = Field(default_factory=lambda: {
         "type": "object",
         "properties": {
@@ -593,7 +594,7 @@ class MattingTool(FunctionTool[AstrAgentContext]):
         from .main import _extract_first_image_b64
 
         event = context.context.event
-        ok, b64, err = await _extract_first_image_b64(event)
+        ok, b64, err = await _extract_first_image_b64(event, "/u 抠图")
         if not ok:
             return err
 
@@ -605,7 +606,15 @@ class MattingTool(FunctionTool[AstrAgentContext]):
         ok, data, caption = await matting.fetch(b64, _token(), settings, session=_session())
         if not ok:
             return caption
-        return caption
+
+        # 主动把结果图片投递到当前会话（群聊/私聊），避免用户只收到文字提示
+        try:
+            chain = MessageChain().base64_image(data).message(f"\n{caption}")
+            await _plugin_instance.context.send_message(event.unified_msg_origin, chain)
+            return f"{caption}\n🎉 结果图片已发送到当前会话"
+        except Exception as e:
+            logger.warning(f"[UApiPro] matting 结果图片发送失败: {e}")
+            return f"{caption}\n⚠️ 结果图片发送失败，请用户发送 /u 抠图 指令查看"
 
 
 # ── 注册入口 ─────────────────────────────────────────────────────────────────

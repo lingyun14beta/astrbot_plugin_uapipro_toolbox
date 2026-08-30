@@ -20,8 +20,15 @@ from astrbot.api.message_components import Image, Plain, Reply, Node
 OCR_MAX_IMAGE_BYTES = 10 * 1024 * 1024
 
 
-async def _extract_first_image_b64(event: AstrMessageEvent) -> tuple[bool, str, str]:
-    """提取消息中第一张图片并转为 Base64，优先取直接发送的图，没有则取引用回复的图。"""
+async def _extract_first_image_b64(
+    event: AstrMessageEvent, hint: str = "对应指令"
+) -> tuple[bool, str, str]:
+    """提取消息中第一张图片并转为 Base64，优先取直接发送的图，没有则取引用回复的图。
+
+    Args:
+        event: 消息事件。
+        hint: 未检测到图片时提示用户应使用的指令（如 /u ocr /u 抠图）。
+    """
     direct_images: list[Image] = []
     quoted_images: list[Image] = []
     for comp in event.get_messages():
@@ -35,7 +42,7 @@ async def _extract_first_image_b64(event: AstrMessageEvent) -> tuple[bool, str, 
     candidates = direct_images or quoted_images
 
     if not candidates:
-        return False, "", "❓ 未检测到图片，请直接发图或引用一张图片后发送 /u ocr"
+        return False, "", f"❓ 未检测到图片，请直接发图或引用一张图片后发送 {hint}"
 
     try:
         b64 = await candidates[0].convert_to_base64()
@@ -436,7 +443,7 @@ class UApiProPlugin(Star):
             yield event.plain_result(f"⏰ 冷却中: 还剩 {remain} 秒")
             return
 
-        ok, b64, err = await _extract_first_image_b64(event)
+        ok, b64, err = await _extract_first_image_b64(event, "/u ocr")
         if not ok:
             yield event.plain_result(err)
             return
@@ -483,7 +490,7 @@ class UApiProPlugin(Star):
             yield event.plain_result(f"⏰ 冷却中: 还剩 {remain} 秒")
             return
 
-        ok, b64, err = await _extract_first_image_b64(event)
+        ok, b64, err = await _extract_first_image_b64(event, "/u 抠图")
         if not ok:
             yield event.plain_result(err)
             return
