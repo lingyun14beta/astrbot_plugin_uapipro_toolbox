@@ -20,8 +20,15 @@ from astrbot.api.message_components import Image, Plain, Reply, Node
 OCR_MAX_IMAGE_BYTES = 10 * 1024 * 1024
 
 
-async def _extract_first_image_b64(event: AstrMessageEvent) -> tuple[bool, str, str]:
-    """提取消息中第一张图片并转为 Base64，优先取直接发送的图，没有则取引用回复的图。"""
+async def _extract_first_image_b64(
+    event: AstrMessageEvent, hint: str = "对应指令"
+) -> tuple[bool, str, str]:
+    """提取消息中第一张图片并转为 Base64，优先取直接发送的图，没有则取引用回复的图。
+
+    Args:
+        event: 消息事件。
+        hint: 未检测到图片时提示用户应使用的指令（如 /u ocr /u 抠图）。
+    """
     direct_images: list[Image] = []
     quoted_images: list[Image] = []
     for comp in event.get_messages():
@@ -35,7 +42,7 @@ async def _extract_first_image_b64(event: AstrMessageEvent) -> tuple[bool, str, 
     candidates = direct_images or quoted_images
 
     if not candidates:
-        return False, "", "❓ 未检测到图片，请直接发图或引用一张图片后发送 /u ocr"
+        return False, "", f"❓ 未检测到图片，请直接发图或引用一张图片后发送 {hint}"
 
     try:
         b64 = await candidates[0].convert_to_base64()
@@ -54,6 +61,7 @@ class UApiProPlugin(Star):
         "weather",
         "ipquery",
         "mcquery",
+        "bedrock",
         "hitokoto",
         "random_img",
         "news",
@@ -187,6 +195,13 @@ class UApiProPlugin(Star):
     async def cmd_mc(self, event: AstrMessageEvent):
         async for r in self._handle_query(
             event, "mcquery", r"u\s+mc", "MC服务器状态", max_len=100
+        ):
+            yield r
+
+    @filter.command("u 基岩", desc="MC基岩版服务器状态")
+    async def cmd_mc_bedrock(self, event: AstrMessageEvent):
+        async for r in self._handle_query(
+            event, "bedrock", r"u\s+基岩", "基岩版服务器状态", max_len=100
         ):
             yield r
 
@@ -428,7 +443,7 @@ class UApiProPlugin(Star):
             yield event.plain_result(f"⏰ 冷却中: 还剩 {remain} 秒")
             return
 
-        ok, b64, err = await _extract_first_image_b64(event)
+        ok, b64, err = await _extract_first_image_b64(event, "/u ocr")
         if not ok:
             yield event.plain_result(err)
             return
@@ -466,6 +481,42 @@ class UApiProPlugin(Star):
                 logger.warning(f"[UApiPro] 合并转发发送失败，降级为普通文本: {e}")
 
         yield event.plain_result(result_msg)
+
+    @filter.command("u 抠图", desc="图片抠图（背景移除）")
+    async def cmd_matting(self, event: AstrMessageEvent):
+        event.should_call_llm(False)
+        in_cd, remain = await self._check_cd(event)
+        if in_cd:
+            yield event.plain_result(f"⏰ 冷却中: 还剩 {remain} 秒")
+            return
+
+        ok, b64, err = await _extract_first_image_b64(event, "/u 抠图")
+        if not ok:
+            yield event.plain_result(err)
+            return
+
+        from .apis import matting
+
+        matting_settings = self.plugin_config.get("matting_settings", {})
+        try:
+            ok, result_b64, caption = await matting.fetch(
+                b64,
+                self.plugin_config.get("uapi_token", ""),
+                matting_settings,
+                session=self.session,
+            )
+        except Exception as e:
+            logger.error(f"[UApiPro] 抠图执行异常: {e}")
+            yield event.plain_result("❌ 插件内部执行异常")
+            return
+
+        if not ok:
+            yield event.plain_result(caption or "❌ 抠图失败，请稍后再试。")
+            return
+
+        yield event.chain_result(
+            [Image(file=f"base64://{result_b64}"), Plain(f"\n{caption}")]
+        )
 
     @filter.command("u 新闻", desc="每日新闻早报")
     async def cmd_news(self, event: AstrMessageEvent):
@@ -613,6 +664,7 @@ class UApiProPlugin(Star):
             "🌤️ /u 天气 <城市>\n"
             "🌐 /u ip <IP/域名>\n"
             "🎮 /u mc <服务器地址>\n"
+            "⛏️ /u 基岩 <服务器地址>       MC基岩版服务器\n"
             "👤 /u mc玩家 <正版ID>\n"
             "📅 /u 万年历 [日期/月份]\n"
             "🎲 /u 随机 [长度] [类型]\n"
@@ -631,6 +683,7 @@ class UApiProPlugin(Star):
             " /u 新闻\n"
             " /u 随机图片\n"
             " /u ocr 发图或引用图片识别文字\n"
+            "🎨 /u 抠图 发图或引用图片抠图\n"
             "━━━━━━━━━━━━━━\n"
             "💡 提示：[] 为可选，<> 为必填"
         )

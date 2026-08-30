@@ -5,7 +5,10 @@ import os
 API_URL = "https://uapis.cn/api/v1/daily/news-image"
 
 async def fetch(token: str = "", session: aiohttp.ClientSession = None):
-    headers = {"User-Agent": "AstrBot_UApiPro", "Token": token, "Authorization": f"Bearer {token}"}
+    headers = {"User-Agent": "AstrBot_UApiPro"}
+    if token:
+        headers["Token"] = token
+        headers["Authorization"] = f"Bearer {token}"
     params = {"token": token} if token else {}
 
     local_session = False

@@ -8,7 +8,10 @@ API_URL_ADVANCED = "https://uapis.cn/api/v1/saying/random"
 async def fetch(token: str = "", session: aiohttp.ClientSession = None):
     """基础一言：随机返回一条语录，无筛选参数。"""
     params = {"token": token} if token else {}
-    headers = {"User-Agent": "AstrBot_UApiPro", "Token": token, "Authorization": f"Bearer {token}"}
+    headers = {"User-Agent": "AstrBot_UApiPro"}
+    if token:
+        headers["Token"] = token
+        headers["Authorization"] = f"Bearer {token}"
 
     local_session = False
     if session is None:
@@ -76,7 +79,10 @@ def _build_advanced_params(token: str, settings: dict) -> dict:
 
 async def fetch_advanced(token: str, settings: dict, session: aiohttp.ClientSession = None):
     """高级一言：按 hitokoto_advanced 配置（mode/scene/source/category/tag）请求语录。"""
-    headers = {"User-Agent": "AstrBot_UApiPro", "Token": token, "Authorization": f"Bearer {token}"}
+    headers = {"User-Agent": "AstrBot_UApiPro"}
+    if token:
+        headers["Token"] = token
+        headers["Authorization"] = f"Bearer {token}"
     params = _build_advanced_params(token, settings or {})
 
     local_session = False

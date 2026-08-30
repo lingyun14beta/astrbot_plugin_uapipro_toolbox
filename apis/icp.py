@@ -30,11 +30,10 @@ async def fetch(arg_str: str, token: str, session: aiohttp.ClientSession = None)
     local_session = False
     
     if session is None:
-        headers = {
-            "User-Agent": "AstrBot_UApiPro",
-            "Token": token,
-            "Authorization": f"Bearer {token}"
-        }
+        headers = {"User-Agent": "AstrBot_UApiPro"}
+        if token:
+            headers["Token"] = token
+            headers["Authorization"] = f"Bearer {token}"
         session = aiohttp.ClientSession(headers=headers)
         local_session = True
 

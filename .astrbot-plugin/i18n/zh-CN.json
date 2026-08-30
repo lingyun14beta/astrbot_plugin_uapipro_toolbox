@@ -114,6 +114,37 @@
         "description": "仓库列表数量",
         "hint": "返回最近活跃仓库的最大数量（1-100）。"
       }
+    },
+    "matting_settings": {
+      "description": "抠图设置",
+      "hint": "配置 /u 抠图 指令的默认分割模型、输出形态与精修参数。",
+      "model": {
+        "description": "分割模型",
+        "hint": "general 通用 / fast 轻量快速 / portrait 人像特化 / sharp 高锐利度边缘",
+        "labels": ["通用", "轻量快速", "人像特化", "高锐利度边缘"]
+      },
+      "output": {
+        "description": "输出形态",
+        "hint": "cutout 透明主体 / mask 灰度蒙版 / background 纯色背景（需配合底色与 jpeg）",
+        "labels": ["透明主体", "灰度蒙版", "纯色背景"]
+      },
+      "background_color": {
+        "description": "合成底色 (#RRGGBB)",
+        "hint": "仅 output=background 时生效，如证件照蓝底 #438EDB"
+      },
+      "out_format": {
+        "description": "输出格式",
+        "hint": "jpeg 不支持透明通道，需与 output=background 组合使用",
+        "labels": ["PNG", "WebP", "JPEG"]
+      },
+      "threshold": {
+        "description": "二值化阈值 (0~1)",
+        "hint": "大于 0 时滤除半透明像素，边缘更锐利；0 保持原生渐变"
+      },
+      "feather_px": {
+        "description": "高斯羽化半径 (0~64)",
+        "hint": "边缘生硬时可设置像素半径柔化边缘；0 不柔化"
+      }
     }
   }
 }

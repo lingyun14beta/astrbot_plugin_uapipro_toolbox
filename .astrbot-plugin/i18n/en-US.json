@@ -114,6 +114,37 @@
         "description": "Repository List Limit",
         "hint": "Max number of recently active repositories to return (1-100)."
       }
+    },
+    "matting_settings": {
+      "description": "Image Matting Settings",
+      "hint": "Default segmentation model, output mode and refinement options for the /u matting (抠图) command.",
+      "model": {
+        "description": "Segmentation Model",
+        "hint": "general / fast / portrait (subject-specific) / sharp (high-detail edges)",
+        "labels": ["General", "Fast", "Portrait", "Sharp"]
+      },
+      "output": {
+        "description": "Output Mode",
+        "hint": "cutout transparent subject / mask grayscale alpha / background solid color (requires color, supports jpeg)",
+        "labels": ["Cutout", "Mask", "Background"]
+      },
+      "background_color": {
+        "description": "Background Color (#RRGGBB)",
+        "hint": "Only applied when output=background, e.g. ID-photo blue #438EDB"
+      },
+      "out_format": {
+        "description": "Output Format",
+        "hint": "jpeg does not support transparency and must be combined with output=background",
+        "labels": ["PNG", "WebP", "JPEG"]
+      },
+      "threshold": {
+        "description": "Alpha Threshold (0~1)",
+        "hint": "Values > 0 remove semi-transparent pixels for sharper edges; 0 keeps the native gradient"
+      },
+      "feather_px": {
+        "description": "Gaussian Feather Radius (0~64)",
+        "hint": "Pixels radius to soften harsh edges; 0 disables feathering"
+      }
     }
   }
 }
