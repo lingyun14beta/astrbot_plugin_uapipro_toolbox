@@ -573,7 +573,7 @@ class OcrTool(FunctionTool[AstrAgentContext]):
 @dataclass
 class MattingTool(FunctionTool[AstrAgentContext]):
     name: str = "uapi_matting"
-    description: str = "对当前对话中的图片（含引用回复）进行抠图（背景移除），并自动将结果图片发送到当前会话。可指定分割模型、输出形态（透明主体/灰度蒙版/纯色背景）、底色与输出格式。注意：jpeg 格式仅支持 output=background 纯色背景模式。"
+    description: str = "对当前对话中的图片（含引用回复）进行抠图（背景移除），结果图片会自动发送到当前会话，无需提示用户另发指令。可指定分割模型、输出形态（透明主体/灰度蒙版/纯色背景）、底色与输出格式。注意：jpeg 格式仅支持 output=background 纯色背景模式。工具只返回事实数据，请基于数据自然回复用户。"
     parameters: dict = Field(default_factory=lambda: {
         "type": "object",
         "properties": {
@@ -607,14 +607,14 @@ class MattingTool(FunctionTool[AstrAgentContext]):
         if not ok:
             return caption
 
-        # 主动把结果图片投递到当前会话（群聊/私聊），避免用户只收到文字提示
+        # 主动把结果图片投递到当前会话（群聊/私聊），仅把事实数据交给 LLM 组织回复
         try:
             chain = MessageChain().base64_image(data).message(f"\n{caption}")
             await _plugin_instance.context.send_message(event.unified_msg_origin, chain)
-            return f"{caption}\n🎉 结果图片已发送到当前会话"
+            return caption
         except Exception as e:
             logger.warning(f"[UApiPro] matting 结果图片发送失败: {e}")
-            return f"{caption}\n⚠️ 结果图片发送失败，请用户发送 /u 抠图 指令查看"
+            return f"{caption}\n（结果图片发送失败，用户可在会话中发送 /u 抠图 查看）"
 
 
 # ── 注册入口 ─────────────────────────────────────────────────────────────────
