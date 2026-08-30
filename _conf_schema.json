@@ -202,5 +202,51 @@
                 "default": 5
             }
         }
+    },
+    "matting_settings": {
+        "description": "抠图设置",
+        "hint": "配置 /u 抠图 指令的默认分割模型、输出形态与精修参数。",
+        "type": "object",
+        "items": {
+            "model": {
+                "description": "分割模型",
+                "hint": "general 通用 / fast 轻量快速 / portrait 人像特化 / sharp 高锐利度边缘",
+                "type": "string",
+                "options": ["general", "fast", "portrait", "sharp"],
+                "default": "general"
+            },
+            "output": {
+                "description": "输出形态",
+                "hint": "cutout 透明主体 / mask 灰度蒙版 / background 纯色背景（需配合底色与 jpeg）",
+                "type": "string",
+                "options": ["cutout", "mask", "background"],
+                "default": "cutout"
+            },
+            "background_color": {
+                "description": "合成底色 (#RRGGBB)",
+                "hint": "仅 output=background 时生效，如证件照蓝底 #438EDB",
+                "type": "string",
+                "default": "#438EDB"
+            },
+            "out_format": {
+                "description": "输出格式",
+                "hint": "jpeg 不支持透明通道，需与 output=background 组合使用",
+                "type": "string",
+                "options": ["png", "webp", "jpeg"],
+                "default": "png"
+            },
+            "threshold": {
+                "description": "二值化阈值 (0~1)",
+                "hint": "大于 0 时滤除半透明像素，边缘更锐利；0 保持原生渐变",
+                "type": "float",
+                "default": 0.0
+            },
+            "feather_px": {
+                "description": "高斯羽化半径 (0~64)",
+                "hint": "边缘生硬时可设置像素半径柔化边缘；0 不柔化",
+                "type": "int",
+                "default": 0
+            }
+        }
     }
 }

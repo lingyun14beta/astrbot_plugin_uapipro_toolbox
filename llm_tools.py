@@ -134,6 +134,26 @@ class McUserTool(FunctionTool[AstrAgentContext]):
 
 
 @dataclass
+class McBedrockTool(FunctionTool[AstrAgentContext]):
+    name: str = "uapi_mc_bedrock"
+    description: str = "查询 Minecraft 基岩版 (Bedrock Edition) 服务器的在线状态、双行 MOTD、游戏模式、协议版本与延迟。适用于基岩版专用服务器，默认端口 19132。"
+    parameters: dict = Field(default_factory=lambda: {
+        "type": "object",
+        "properties": {
+            "address": {"type": "string", "description": "基岩版服务器地址（域名或 IP，默认端口 19132），例如：mco.lbsg.net"}
+        },
+        "required": ["address"]
+    })
+
+    async def call(self, context: ContextWrapper[AstrAgentContext], **kwargs) -> ToolExecResult:
+        from .apis import bedrock
+        address = kwargs.get("address", "").strip()[:100]
+        if not address:
+            return "请提供基岩版服务器地址。"
+        return await _call_api(bedrock.fetch(address, _token(), session=_session()))
+
+
+@dataclass
 class WhoisTool(FunctionTool[AstrAgentContext]):
     name: str = "uapi_whois"
     description: str = "查询域名的 WHOIS 信息，包括注册商、到期日期及 DNS 服务器。"
@@ -549,14 +569,53 @@ class OcrTool(FunctionTool[AstrAgentContext]):
         ))
 
 
+@dataclass
+class MattingTool(FunctionTool[AstrAgentContext]):
+    name: str = "uapi_matting"
+    description: str = "对当前对话中的图片（含引用回复）进行抠图（背景移除）。可指定分割模型、输出形态（透明主体/灰度蒙版/纯色背景）、底色与输出格式；仅返回处理信息，结果图片请告知用户发送 /u 抠图 指令查看。注意：jpeg 格式仅支持 output=background 纯色背景模式。"
+    parameters: dict = Field(default_factory=lambda: {
+        "type": "object",
+        "properties": {
+            "model": {"type": "string", "enum": ["general", "fast", "portrait", "sharp"],
+                      "description": "分割模型：general 通用 / fast 轻量快速 / portrait 人像特化 / sharp 高锐利度边缘"},
+            "output": {"type": "string", "enum": ["cutout", "mask", "background"],
+                       "description": "输出形态：cutout 透明主体 / mask 灰度蒙版 / background 纯色背景（仅此模式支持 jpeg）"},
+            "background_color": {"type": "string",
+                                 "description": "合成底色，仅 output=background 时生效，格式 #RRGGBB，如证件照蓝底 #438EDB"},
+            "out_format": {"type": "string", "enum": ["png", "webp", "jpeg"],
+                           "description": "输出格式；jpeg 必须配合 output=background"}
+        },
+        "required": []
+    })
+
+    async def call(self, context: ContextWrapper[AstrAgentContext], **kwargs) -> ToolExecResult:
+        from .apis import matting
+        from .main import _extract_first_image_b64
+
+        event = context.context.event
+        ok, b64, err = await _extract_first_image_b64(event)
+        if not ok:
+            return err
+
+        settings = {}
+        for key in ("model", "output", "background_color", "out_format"):
+            if kwargs.get(key):
+                settings[key] = kwargs[key]
+
+        ok, data, caption = await matting.fetch(b64, _token(), settings, session=_session())
+        if not ok:
+            return caption
+        return caption
+
+
 # ── 注册入口 ─────────────────────────────────────────────────────────────────
 
 ALL_TOOL_CLASSES = [
-    WeatherTool, IpQueryTool, McServerTool, McUserTool,
+    WeatherTool, IpQueryTool, McServerTool, McUserTool, McBedrockTool,
     WhoisTool, IcpTool, TrackingTool, HolidayTool,
     GithubTool, GithubUserTool, SteamTool, BiliTool,
     AnswerBookTool, EpicTool, RandomStrTool,
-    HotBoardTool, OcrTool,
+    HotBoardTool, OcrTool, MattingTool,
 ]
 
 
